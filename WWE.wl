@@ -12,6 +12,8 @@ initialiseDatabase::usage = "initialiseDatabase[sqlFile_] initializes the databa
 makeDBConnection::usage = "makeDBConnection[dbName_ : \"\"] creates a connection to the database `dbName`.";
 addSupervisorProgram::usage = "addSupervisorProgram[command_String, name_String] adds a program to the supervisord configuration file.";
 
+CommandLineParse = ResourceFunction["CommandLineParse"];
+
 Begin["`Private`"];
 
 (* ::Section:: *)(* Deployment helper functions *)
@@ -308,6 +310,7 @@ addSupervisorProgram[command_String, name_String, OptionsPattern[]] := Module[{
 			WriteString[stream,
 				StringTemplate[
 					StringRiffle[{
+							"",
 							"[program:`name`]",
 							"command=`command`",
 							"autostart=`autostart`",
