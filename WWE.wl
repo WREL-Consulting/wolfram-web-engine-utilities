@@ -118,7 +118,7 @@ deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 			If[FileExistsQ[FileNameJoin[{localDir, "package.json"}]],
 				(* Define frontend build command *)
 				buildCommand = StringRiffle[{
-						"cd "<> feLoc,
+						"cd "<> localDir,
 						"bun install",
 						"bun build:wwe >> '"<> outputLogLoc <>"' 2>&1"
 					},
@@ -134,7 +134,7 @@ deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				(* Deploy frontend build files *)
 				buildLoc = FileNames[
 					"build-wwe",
-					feLoc,
+					localDir,
 					10
 				] /. _String?(StringContainsQ["node_modules"]) -> Nothing;
 				ConfirmAssert[
