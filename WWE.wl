@@ -12,6 +12,8 @@ initialiseDatabase::usage = "initialiseDatabase[sqlFile_] initializes the databa
 makeDBConnection::usage = "makeDBConnection[dbName_ : \"\"] creates a connection to the database `dbName`.";
 addSupervisorProgram::usage = "addSupervisorProgram[command_String, name_String] adds a program to the supervisord configuration file.";
 
+CommandLineParse = ResourceFunction["CommandLineParse"];
+
 Begin["`Private`"];
 
 (* ::Section:: *)(* Deployment helper functions *)
@@ -96,7 +98,7 @@ deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 
 	(* Define clone command *)
 	cloneCommand = StringRiffle[{
-		"/scripts/clonescript.sh",
+		"/scripts/git-clone.sh",
 			cloneLink,
 			localDir,
 			repositoryAssoc["branch"],
@@ -111,14 +113,14 @@ deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 			(* Clone the git repository *)
 			log["running " <> cloneCommand];
 			cloneCode = Run[cloneCommand];
-			log["clonescript returned exit code " <> ToString[cloneCode]];
+			log["git-clone returned exit code " <> ToString[cloneCode]];
 			ConfirmAssert[cloneCode === 0, "Clone failed."];
 
 			(* If package.json exists, build and deploy the frontend *)
 			If[FileExistsQ[FileNameJoin[{localDir, "package.json"}]],
 				(* Define frontend build command *)
 				buildCommand = StringRiffle[{
-						"cd "<> feLoc,
+						"cd "<> localDir,
 						"bun install",
 						"bun build:wwe >> '"<> outputLogLoc <>"' 2>&1"
 					},
@@ -134,7 +136,7 @@ deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				(* Deploy frontend build files *)
 				buildLoc = FileNames[
 					"build-wwe",
-					feLoc,
+					localDir,
 					10
 				] /. _String?(StringContainsQ["node_modules"]) -> Nothing;
 				ConfirmAssert[
@@ -308,6 +310,7 @@ addSupervisorProgram[command_String, name_String, OptionsPattern[]] := Module[{
 			WriteString[stream,
 				StringTemplate[
 					StringRiffle[{
+							"",
 							"[program:`name`]",
 							"command=`command`",
 							"autostart=`autostart`",
