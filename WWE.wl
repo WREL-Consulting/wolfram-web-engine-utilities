@@ -96,7 +96,7 @@ deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 
 	(* Define clone command *)
 	cloneCommand = StringRiffle[{
-		"/scripts/clonescript.sh",
+		"/scripts/git-clone.sh",
 			cloneLink,
 			localDir,
 			repositoryAssoc["branch"],
@@ -111,7 +111,7 @@ deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 			(* Clone the git repository *)
 			log["running " <> cloneCommand];
 			cloneCode = Run[cloneCommand];
-			log["clonescript returned exit code " <> ToString[cloneCode]];
+			log["git-clone returned exit code " <> ToString[cloneCode]];
 			ConfirmAssert[cloneCode === 0, "Clone failed."];
 
 			(* If package.json exists, build and deploy the frontend *)
