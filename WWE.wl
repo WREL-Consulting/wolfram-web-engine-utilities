@@ -352,7 +352,7 @@ addSupervisorProgram[command_String, name_String, OptionsPattern[]] := Module[{
 (* ::Section:: *)(* Database Helper Functions *)
 Options[initialiseDatabase] = {
 	"RootPassword" -> SystemCredential["db-pass"],
-	"DatabasePassword" -> 3306,
+	"DatabasePassword" -> SystemCredential["db-pass"],
 	"Port" -> 3306
 };
 initialiseDatabase[sqlFile_String, OptionsPattern[]]:= Enclose[ 
