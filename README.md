@@ -1,11 +1,11 @@
 # Web Engine Utilities
+Developer: [TonyA](https://github.com/ToneAr)
 
 A collection of WL functions used in the WREL Wolfram Web Engine deployment.
 
-The functions include deployment and database utility functions.
+Exposed under the `` WWE` `` context.
 
-
-   ## Deployment Functions
+## Deployment Functions
 
 - ### deployRepository
   - | Form | Description |
@@ -64,8 +64,10 @@ The functions include deployment and database utility functions.
     |--------|---------|-------------|---------|
     | `"InitFile"` | `_?FileExistsQ` | `"/usr/share/Wolfram/Kernel/init.m"` | Location of the Wolfram `init.m` file |
 
+   ---
+
 - ### addSupervisorProgram
- -  | Form | Description |
+  - | Form | Description |
     |------|-------------|
     | `addSupervisorProgram[command_String, name_String]` | Adds program definition to su pervisord file under the name `name` with command `command` |
 
@@ -78,33 +80,33 @@ The functions include deployment and database utility functions.
 
    ---
 
-   ## Database Functions
+## Database Functions
 
 - ### initialiseDatabase
-  - | Form | Description |
-    |------|-------------|
-    | `initialiseDatabase[sqlFile_]` | Initializes the database by executing the SQL commands in `sqlFile` |
+   - | Form | Description |
+     |------|-------------|
+     | `initialiseDatabase[sqlFile_]` | Initializes the database by executing the SQL commands in `sqlFile` |
 
-  - | Option | Pattern | Default | Description |
-    |--------|------|---------|----------------|
-    | `"RootPassword"` | `_String` | `SystemCredential["db-pass"]` | Password used for root connections to mariadb |
-    | `"DatabasePassword"` | `_String` | `SystemCredential["db-pass"]` | Password that will be used to connect to the created database (Uses string replacement rules to replace any \`dbPass\` in the SQL file with this password ) |
-    | `"Port"` | `_Integer` | `3306` | Port mariadb is listening on |
+   - | Option | Pattern | Default | Description |
+     |--------|------|---------|----------------|
+     | `"RootPassword"` | `_String` | `SystemCredential["db-pass"]` | Password used for root connections to mariadb |
+     | `"DatabasePassword"` | `_String` | `SystemCredential["db-pass"]` | Password that will be used to connect to the created database (Uses string replacement rules to replace any \`dbPass\` in the SQL file with this password ) |
+     | `"Port"` | `_Integer` | `3306` | Port mariadb is listening on |
 
    ---
 
 - ### makeDBConnection
-  - | Form | Description |
-    |------|-------------|
-    | `makeDBConnection[]` | Creates a connection to the mariadb |
-    | `makeDBConnection[dbName_]` | Creates a connection to the database `dbName` |
+   - | Form | Description |
+     |------|-------------|
+     | `makeDBConnection[]` | Creates a connection to the mariadb |
+     | `makeDBConnection[dbName_]` | Creates a connection to the database `dbName` |
 
-  - | Option | Pattern | Default | Description |
-    |--------|------|---------|----------------|
-    | `"Username"` | `_String` | `"admin"` | Username used to connect to the database |
-    | `"Password"` | `_String` | `SystemCredential["db-pass"]` | Password used to connect to th e database |
-    | `"UseConnectionPool"` | `_?BooleanQ` | `True` | Use mariadb connection pool |
-    | `"BaseURL"` | `_String` | `"localhost"` | Base URL for mariadb connection |
-    | `"Port"` | `_Integer` | `3306` | Port mariadb is listening on |
+   - | Option | Pattern | Default | Description |
+     |--------|------|---------|----------------|
+     | `"Username"` | `_String` | `"admin"` | Username used to connect to the database |
+     | `"Password"` | `_String` | `SystemCredential["db-pass"]` | Password used to connect to th e database |
+     | `"UseConnectionPool"` | `_?BooleanQ` | `True` | Use mariadb connection pool |
+     | `"BaseURL"` | `_String` | `"localhost"` | Base URL for mariadb connection |
+     | `"Port"` | `_Integer` | `3306` | Port mariadb is listening on |
 
    ---
