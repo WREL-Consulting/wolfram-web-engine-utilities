@@ -17,11 +17,14 @@ CommandLineParse = ResourceFunction["CommandLineParse"];
 Begin["`Private`"];
 
 (* ::Section:: *)(* Deployment helper functions *)
+Options[deployBuildFolder] = {
+	"WebappLocation" -> "/usr/local/tomcat/webapps/ROOT"
+};
 deployBuildFolder[buildDir_, location_ : ""] :=
 	Enclose[
 		With[{
 			deployLoc = FileNameJoin[{
-				"usr","local","tomcat","webapps","ROOT", location
+				OptionValue["WebappLocation"], location
 			}]
 		},
 		(* If location doesn't exist, create it *)
@@ -36,7 +39,7 @@ deployBuildFolder[buildDir_, location_ : ""] :=
 		(* Delete any existing duplicate files *)
 		If[DirectoryQ[deployLoc],
 			Print["\033[2m[deployBuildFolder]:\033[22m Deleting existing deployment files at ", deployLoc];
-			
+
 			With[{ existingFile = FileNameJoin[{ deployLoc, # }] },
 				If[FileExistsQ[existingFile],
 					If[DirectoryQ[existingFile],
@@ -69,19 +72,19 @@ deployBuildFolder[buildDir_, location_ : ""] :=
 ];
 
 Options[deployRepository] = {
-	"InitializeDB" -> False
+	"Initialize" -> False
 };
 deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		cloneCommand, cloneCode, buildCommand, buildCode, feLoc, outputLogLoc,
 		outputLog, ret, deployWL, errorlog, log, logDir, buildLoc,
 		cloneLink = repositoryAssoc["link"],
 		localDir = repositoryAssoc["local"],
-		init = If[OptionValue["InitializeDB"],
+		init = If[OptionValue["Initialize"],
 			" --init",
 			""
 		]
 	},
-	
+
 	(* Define logging function *)
 	log = Function[
 		BinaryWrite[outputLog, Print["\033[2m[deployRepository]:\033[22m ", #]; ToString[#] <> "\n"];
@@ -109,7 +112,7 @@ deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		outputLog = OpenAppend[outputLogLoc, BinaryFormat -> True];
 		,
 		ret = Enclose[
-			
+
 			(* Clone the git repository *)
 			log["running " <> cloneCommand];
 			cloneCode = Run[cloneCommand];
@@ -132,7 +135,7 @@ deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				buildCode = Run[buildCommand];
 				log["Build command returned code " <> ToString[buildCode]];
 				ConfirmAssert[cloneCode === 0, "Frontend build failed."];
-				
+
 				(* Deploy frontend build files *)
 				buildLoc = FileNames[
 					"build-wwe",
@@ -149,7 +152,7 @@ deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 						repositoryAssoc["prefix"]
 					];
 			];
-			
+
 			(* Deploy WL backend using project's deploy.wwe.wls script *)
 			deployWL = FileNames["deploy.wwe.wls", {localDir}, 4];
 			If[Length[deployWL] =!= 0,
@@ -227,7 +230,7 @@ deployExpression[expr_, location_String : Automatic, OptionsPattern[]] :=
 			"Resource" -> deployment,
 			"URL" -> FileNameJoin[{"/",loc}]
 		|>]
-	
+
 	]
 ];
 
@@ -286,7 +289,7 @@ Options[addSupervisorProgram] = {
 addSupervisorProgram[command_String, name_String, OptionsPattern[]] := Module[{
 		stream, rawFile
 	},
-	
+
 	Enclose[
 
 		If[FileExistsQ["/etc/supervisord.conf"],
@@ -355,20 +358,20 @@ Options[initialiseDatabase] = {
 	"DatabasePassword" -> SystemCredential["db-pass"],
 	"Port" -> 3306
 };
-initialiseDatabase[sqlFile_String, OptionsPattern[]]:= Enclose[ 
+initialiseDatabase[sqlFile_String, OptionsPattern[]]:= Enclose[
 	Module[{con, sqlCommands},
-		
+
 		If[FileExistsQ[sqlFile] === False,
 			Message[initialiseDatabase::nofile, sqlFile];
 			Return[$Failed]
 		];
 
 		Needs["DatabaseLink`"];
-		
+
 		WithCleanup[
 			con = Confirm[
 					OpenSQLConnection[
-					JDBC["MySQL(Connector/J)", 
+					JDBC["MySQL(Connector/J)",
 						StringTemplate["localhost:``"][
 							OptionValue["Port"]
 						]
@@ -387,7 +390,7 @@ initialiseDatabase[sqlFile_String, OptionsPattern[]]:= Enclose[
 			][<|
 				"db-pass" -> OptionValue["DatabasePassword"]
 			|>] // StringSplit[#, ";"]&;
-				
+
 			Confirm[
 				SQLExecute[con, #]
 			]& /@ Prepend[
@@ -404,7 +407,7 @@ initialiseDatabase[sqlFile_String, OptionsPattern[]]:= Enclose[
 
 Options[makeDBConnection] = {
 	"Port" -> 3306,
-	"Username" -> "core-admin",
+	"Username" -> "admin",
 	"Password" -> SystemCredential["db-pass"],
 	"UseConnectionPool" -> True,
 	"BaseURL" -> "localhost"
