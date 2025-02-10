@@ -11,6 +11,7 @@ addInitCode::usage = "addInitCode[initCode_] adds the initialization code `initC
 initialiseDatabase::usage = "initialiseDatabase[sqlFile_] initializes the database using the SQL commands in `sqlFile`.";
 makeDBConnection::usage = "makeDBConnection[dbName_ : \"\"] creates a connection to the database `dbName`.";
 addSupervisorProgram::usage = "addSupervisorProgram[command_String, name_String] adds a program to the supervisord configuration file.";
+addCrontabCommand::usage = "addCrontabCommand[command_String, cronSpec_String] adds a command to the crontab file with the provided cronSpec.";
 
 CommandLineParse = ResourceFunction["CommandLineParse"];
 
@@ -352,6 +353,53 @@ addSupervisorProgram[command_String, name_String, OptionsPattern[]] := Module[{
 	]
 ];
 
+Options[addCrontabCommand] = {
+	"CrontabFile" -> "/etc/crontab",
+	"User" -> "root"
+};
+addCrontabCommand[
+	command_String,
+	cronSpec_String?(StringMatchQ[
+		("\\*"|(ToString/@Range[0, 59] ))~~
+		" "~~("\\*"|(ToString/@Range[0, 23] ))~~
+		" "~~("\\*"|(ToString/@Range[1, 31] ))~~
+		" "~~("\\*"|(ToString/@Range[1, 12])| {
+			"jan","feb","mar","apr","may","jun",
+			"jul","aug","sep","oct","nov","dec"
+		})~~
+		" "~~("\\*"|(ToString/@Range[0, 6]) | {
+			"mon","tue","wed","thu","fri","sat","sun"
+		})
+	])
+] := Module[
+	{
+		crontabFile = OptionValue["CrontabFile"],
+		existingCrontab, crontabStr, stream, res
+	},
+
+	res = Enclose[
+		existingCrontab = Import[crontabFile,
+			"Text"
+		] // StringDelete[WhitespaceCharacter];
+
+		If[StringContainsQ[existingCrontab, StringDelete[command, WhitespaceCharacter]],
+			Message[addCrontabCommand::exists, command];
+			Return[False]
+		];
+
+		crontabStr = StringRiffle[{
+			cronSpec, OptionValue["User"], command
+		}];
+		WithCleanup[
+			stream = Confirm @ OpenAppend[crontabFile],
+			Confirm @ WriteString[stream, crontabStr],
+			Close[stream]
+		];
+		True
+	];
+	res /. _?FailureQ -> $Failed
+];
+
 (* ::Section:: *)(* Database Helper Functions *)
 Options[initialiseDatabase] = {
 	"RootPassword" -> SystemCredential["db-pass"],
@@ -408,7 +456,7 @@ initialiseDatabase[sqlFile_String, OptionsPattern[]]:= Enclose[
 Options[makeDBConnection] = {
 	"Port" -> 3306,
 	"Username" -> "admin",
-	"Password" -> SystemCredential["db-pass"],
+		"Password" -> SystemCredential["db-pass"],
 	"UseConnectionPool" -> True,
 	"BaseURL" -> "localhost"
 };
@@ -441,6 +489,7 @@ makeDBConnection[dbName_String : "", OptionsPattern[]]:= Enclose[
 (* ::Section:: *)(* Messages *)
 addSupervisorProgram::noconf = "Could not find supervisord.conf file at /etc/supervisord.conf";
 addSupervisorProgram::exists = "Program `1` already exists in supervisord.conf file";
+addCrontabCommand::exists = "Command `1` already exists in crontab file";
 addInitCode::noconf = "Could not find init.m file at `1`";
 addInitCode::exists = "Program `1` already exists in supervisord.conf file";
 initialiseDatabase::nofile = "Could not find sql file at `1`";
