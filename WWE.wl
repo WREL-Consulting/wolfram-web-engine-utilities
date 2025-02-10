@@ -11,6 +11,7 @@ addInitCode::usage = "addInitCode[initCode_] adds the initialization code `initC
 initialiseDatabase::usage = "initialiseDatabase[sqlFile_] initializes the database using the SQL commands in `sqlFile`.";
 makeDBConnection::usage = "makeDBConnection[dbName_ : \"\"] creates a connection to the database `dbName`.";
 addSupervisorProgram::usage = "addSupervisorProgram[command_String, name_String] adds a program to the supervisord configuration file.";
+addCrontabCommand::usage = "addCrontabCommand[command_String, cronSpec_String] adds a command to the crontab file with the provided cronSpec.";
 
 CommandLineParse = ResourceFunction["CommandLineParse"];
 
@@ -350,6 +351,43 @@ addSupervisorProgram[command_String, name_String, OptionsPattern[]] := Module[{
 
 		True
 	]
+];
+
+Options[addCrontabCommand] = {
+	"CrontabFile" -> "/etc/crontab",
+	"User" -> "root"
+};
+addCrontabCommand[
+	command_String,
+	cronSpec_String?(StringMatchQ[
+		("\\*"|(ToString/@Range[0, 59] ))~~
+		" "~~("\\*"|(ToString/@Range[0, 23] ))~~
+		" "~~("\\*"|(ToString/@Range[1, 31] ))~~
+		" "~~("\\*"|(ToString/@Range[1, 12])| {
+			"jan","feb","mar","apr","may","jun",
+			"jul","aug","sep","oct","nov","dec"
+		})~~
+		" "~~("\\*"|(ToString/@Range[0, 6]) | {
+			"mon","tue","wed","thu","fri","sat","sun"
+		})
+	])
+] := Module[
+	{
+		crontabFile = OptionValue["CrontabFile"],
+		crontabStr, stream, res
+	},
+	res = Enclose[
+		crontabStr = StringRiffle[{
+			cronSpec, OptionValue["User"], command
+		}];
+		WithCleanup[
+			stream = Confirm @ OpenAppend[crontabFile],
+			Confirm @ WriteString[stream, crontabStr],
+			Close[stream]
+		];
+		True
+	];
+	res /. _?FailureQ -> False
 ];
 
 (* ::Section:: *)(* Database Helper Functions *)
