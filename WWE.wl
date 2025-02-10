@@ -374,9 +374,19 @@ addCrontabCommand[
 ] := Module[
 	{
 		crontabFile = OptionValue["CrontabFile"],
-		crontabStr, stream, res
+		existingCrontab, crontabStr, stream, res
 	},
+
 	res = Enclose[
+		existingCrontab = Import[crontabFile,
+			"Text"
+		] // StringDelete[WhitespaceCharacter];
+
+		If[StringContainsQ[existingCrontab, StringDelete[command, WhitespaceCharacter]],
+			Message[addCrontabCommand::exists, command];
+			Return[False]
+		];
+
 		crontabStr = StringRiffle[{
 			cronSpec, OptionValue["User"], command
 		}];
@@ -387,7 +397,7 @@ addCrontabCommand[
 		];
 		True
 	];
-	res /. _?FailureQ -> False
+	res /. _?FailureQ -> $Failed
 ];
 
 (* ::Section:: *)(* Database Helper Functions *)
@@ -446,7 +456,7 @@ initialiseDatabase[sqlFile_String, OptionsPattern[]]:= Enclose[
 Options[makeDBConnection] = {
 	"Port" -> 3306,
 	"Username" -> "admin",
-	"Password" -> SystemCredential["db-pass"],
+		"Password" -> SystemCredential["db-pass"],
 	"UseConnectionPool" -> True,
 	"BaseURL" -> "localhost"
 };
@@ -479,6 +489,7 @@ makeDBConnection[dbName_String : "", OptionsPattern[]]:= Enclose[
 (* ::Section:: *)(* Messages *)
 addSupervisorProgram::noconf = "Could not find supervisord.conf file at /etc/supervisord.conf";
 addSupervisorProgram::exists = "Program `1` already exists in supervisord.conf file";
+addCrontabCommand::exists = "Command `1` already exists in crontab file";
 addInitCode::noconf = "Could not find init.m file at `1`";
 addInitCode::exists = "Program `1` already exists in supervisord.conf file";
 initialiseDatabase::nofile = "Could not find sql file at `1`";
