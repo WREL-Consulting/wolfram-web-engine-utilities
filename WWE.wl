@@ -359,18 +359,36 @@ Options[addCrontabCommand] = {
 };
 addCrontabCommand[
 	command_String,
-	cronSpec_String?(StringMatchQ[
-		("\\*"|(ToString/@Range[0, 59] ))~~
-		" "~~("\\*"|(ToString/@Range[0, 23] ))~~
-		" "~~("\\*"|(ToString/@Range[1, 31] ))~~
-		" "~~("\\*"|(ToString/@Range[1, 12])| {
-			"jan","feb","mar","apr","may","jun",
-			"jul","aug","sep","oct","nov","dec"
-		})~~
-		" "~~("\\*"|(ToString/@Range[0, 6]) | {
-			"mon","tue","wed","thu","fri","sat","sun"
-		})
-	])
+	cronSpec_String?(
+		StringMatchQ[
+			(
+				("\\*" | (ToString /@ Range[0, 59])) ~~
+				("," ~~ ("\\*" | (ToString /@ Range[0, 59])))...
+			) ~~ " " ~~ (
+				("\\*" | (ToString /@ Range[0, 23])) ~~
+				("," ~~ ("\\*" | (ToString /@ Range[0, 23])))...
+			) ~~ " " ~~ (
+				("\\*" | (ToString /@ Range[1, 31])) ~~
+				("," ~~ ("\\*" | (ToString /@ Range[1, 31])))...
+			) ~~ " " ~~ (
+				("\\*" | (ToString /@ Range[1, 12]) | {
+					"jan","feb","mar","apr","may","jun",
+					"jul","aug","sep","oct","nov","dec"
+				}) ~~
+				("," ~~ ("\\*" | (ToString /@ Range[1, 12]) | {
+					"jan","feb","mar","apr","may","jun",
+					"jul","aug","sep","oct","nov","dec"
+				}))...
+			) ~~ " " ~~ (
+				("\\*" | (ToString /@ Range[0, 6]) | {
+					"mon","tue","wed","thu","fri","sat","sun"
+				}) ~~
+				("," ~~ ("\\*" | (ToString /@ Range[0, 6]) | {
+					"mon","tue","wed","thu","fri","sat","sun"
+				}))...
+			)
+		]
+	)
 ] := Module[
 	{
 		crontabFile = OptionValue["CrontabFile"],
