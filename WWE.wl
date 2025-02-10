@@ -21,7 +21,7 @@ Begin["`Private`"];
 Options[deployBuildFolder] = {
 	"WebappLocation" -> "/usr/local/tomcat/webapps/ROOT"
 };
-deployBuildFolder[buildDir_, location_ : ""] :=
+deployBuildFolder[buildDir_, location_String : "", OptionsPattern[]] :=
 	Enclose[
 		With[{
 			deployLoc = FileNameJoin[{
@@ -359,18 +359,36 @@ Options[addCrontabCommand] = {
 };
 addCrontabCommand[
 	command_String,
-	cronSpec_String?(StringMatchQ[
-		("\\*"|(ToString/@Range[0, 59] ))~~
-		" "~~("\\*"|(ToString/@Range[0, 23] ))~~
-		" "~~("\\*"|(ToString/@Range[1, 31] ))~~
-		" "~~("\\*"|(ToString/@Range[1, 12])| {
-			"jan","feb","mar","apr","may","jun",
-			"jul","aug","sep","oct","nov","dec"
-		})~~
-		" "~~("\\*"|(ToString/@Range[0, 6]) | {
-			"mon","tue","wed","thu","fri","sat","sun"
-		})
-	])
+	cronSpec_String?(
+		StringMatchQ[
+			(
+				("\\*" | (ToString /@ Range[0, 59])) ~~
+				("," ~~ ("\\*" | (ToString /@ Range[0, 59])))...
+			) ~~ " " ~~ (
+				("\\*" | (ToString /@ Range[0, 23])) ~~
+				("," ~~ ("\\*" | (ToString /@ Range[0, 23])))...
+			) ~~ " " ~~ (
+				("\\*" | (ToString /@ Range[1, 31])) ~~
+				("," ~~ ("\\*" | (ToString /@ Range[1, 31])))...
+			) ~~ " " ~~ (
+				("\\*" | (ToString /@ Range[1, 12]) | {
+					"jan","feb","mar","apr","may","jun",
+					"jul","aug","sep","oct","nov","dec"
+				}) ~~
+				("," ~~ ("\\*" | (ToString /@ Range[1, 12]) | {
+					"jan","feb","mar","apr","may","jun",
+					"jul","aug","sep","oct","nov","dec"
+				}))...
+			) ~~ " " ~~ (
+				("\\*" | (ToString /@ Range[0, 6]) | {
+					"mon","tue","wed","thu","fri","sat","sun"
+				}) ~~
+				("," ~~ ("\\*" | (ToString /@ Range[0, 6]) | {
+					"mon","tue","wed","thu","fri","sat","sun"
+				}))...
+			)
+		]
+	)
 ] := Module[
 	{
 		crontabFile = OptionValue["CrontabFile"],
@@ -378,7 +396,13 @@ addCrontabCommand[
 	},
 
 	res = Enclose[
-		existingCrontab = Import[crontabFile,
+
+		If[!FileExistsQ[crontabFile],
+			Message[addCrontabCommand::noconf, crontabFile];
+			Return[$Failed]
+		];
+
+		existingCrontab = Confirm @ Import[crontabFile,
 			"Text"
 		] // StringDelete[WhitespaceCharacter];
 
@@ -490,6 +514,7 @@ makeDBConnection[dbName_String : "", OptionsPattern[]]:= Enclose[
 addSupervisorProgram::noconf = "Could not find supervisord.conf file at /etc/supervisord.conf";
 addSupervisorProgram::exists = "Program `1` already exists in supervisord.conf file";
 addCrontabCommand::exists = "Command `1` already exists in crontab file";
+addCrontabCommand::noconf = "Could not find crontab file at `1`";
 addInitCode::noconf = "Could not find init.m file at `1`";
 addInitCode::exists = "Program `1` already exists in supervisord.conf file";
 initialiseDatabase::nofile = "Could not find sql file at `1`";
