@@ -21,7 +21,7 @@ Begin["`Private`"];
 Options[deployBuildFolder] = {
 	"WebappLocation" -> "/usr/local/tomcat/webapps/ROOT"
 };
-deployBuildFolder[buildDir_, location_ : ""] :=
+deployBuildFolder[buildDir_, location_String : "", OptionsPattern[]] :=
 	Enclose[
 		With[{
 			deployLoc = FileNameJoin[{
@@ -388,7 +388,8 @@ addCrontabCommand[
 				}))...
 			)
 		]
-	)
+	),
+	OptionsPattern[]
 ] := Module[
 	{
 		crontabFile = OptionValue["CrontabFile"],
