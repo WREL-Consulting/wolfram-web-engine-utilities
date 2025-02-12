@@ -411,7 +411,7 @@ addCrontabCommand[
 		}];
 		WithCleanup[
 			stream = Confirm @ OpenAppend[crontabFile],
-			Confirm @ WriteString[stream, crontabStr],
+			Confirm @ WriteString[stream, crontabStr, "\n"],
 			Close[stream]
 		];
 		True
