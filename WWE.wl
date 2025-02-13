@@ -267,7 +267,7 @@ addInitCode[initCode_, OptionsPattern[]] := Enclose @ Module[{
 			initFileStr,
 			StringDelete[codeStr, WhitespaceCharacter]
 		],
-		Message[addInitCode::exists, initFileDir];
+		Message[addInitCode::exists, codeStr];
 		Return[False]
 	];
 
@@ -510,7 +510,7 @@ addSupervisorProgram::noconf = "Could not find supervisord.conf file at /etc/sup
 addSupervisorProgram::exists = "Program `1` already exists in supervisord.conf file";
 addCrontabCommand::exists = "Command `1` already exists in crontab file";
 addInitCode::noconf = "Could not find init.m file at `1`";
-addInitCode::exists = "Program `1` already exists in supervisord.conf file";
+addInitCode::exists = "Code `1` already exists in init.m file";
 initialiseDatabase::nofile = "Could not find sql file at `1`";
 
 (* ::Section:: *)(* End *)
