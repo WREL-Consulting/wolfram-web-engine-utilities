@@ -12,10 +12,40 @@ initialiseDatabase::usage = "initialiseDatabase[sqlFile_] initializes the databa
 makeDBConnection::usage = "makeDBConnection[dbName_ : \"\"] creates a connection to the database `dbName`.";
 addSupervisorProgram::usage = "addSupervisorProgram[command_String, name_String] adds a program to the supervisord configuration file.";
 addCrontabCommand::usage = "addCrontabCommand[command_String, cronSpec_String] adds a command to the crontab file with the provided cronSpec.";
+logError::usage = "logError[functionName_String, message_String] logs an error message to the log file.";
 
 CommandLineParse = ResourceFunction["CommandLineParse"];
 
 Begin["`Private`"];
+
+camelToSnakeCase = StringReplace[
+	(StartOfString~~a_?(Not@*LowerCaseQ)):>ToLowerCase[a],
+	a_?(Not@*LowerCaseQ) :> ("-"<>ToLowerCase[a])
+];
+
+Options[logError] = {
+	"LogDirectory" -> "/var/log/"
+};
+logError[ appName_String, functionName_String, message_String, OptionsPattern[] ] := Module[{
+		errStr,
+		dir = FileNameJoin[{
+			OptionValue["LogDirectory"], camelToSnakeCase[appName]
+		}],
+		fileName = camelToSnakeCase[
+				ToLowerCase[StringTrim @ functionName]
+			] <> "-error.log"
+	},
+
+	If[!DirectoryQ[dir],
+		CreateDirectory[dir]
+	];
+
+	WithCleanup[
+		errStr = OpenAppend @ FileNameJoin[{dir, fileName}],
+		WriteString[ errStr, message, "\n" ],
+		Close[ errStr ]
+	]
+];
 
 (* ::Section:: *)(* Deployment helper functions *)
 Options[deployBuildFolder] = {
