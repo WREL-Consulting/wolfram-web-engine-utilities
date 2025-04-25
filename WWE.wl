@@ -463,7 +463,8 @@ addCrontabCommand[
 Options[initialiseDatabase] = {
 	"RootPassword" -> SystemCredential["db-pass"],
 	"DatabasePassword" -> SystemCredential["db-pass"],
-	"Port" -> 3306
+	"Port" -> 3306,
+	"BaseURL" -> "mariadb"
 };
 initialiseDatabase[sqlFile_String, OptionsPattern[]]:= Enclose[
 	Module[{con, sqlCommands},
@@ -479,9 +480,12 @@ initialiseDatabase[sqlFile_String, OptionsPattern[]]:= Enclose[
 			con = Confirm[
 					OpenSQLConnection[
 					JDBC["MySQL(Connector/J)",
-						StringTemplate["localhost:``"][
-							OptionValue["Port"]
-						]
+						StringTemplate["`url`:`port`"][
+						<|
+							"url" -> OptionValue["BaseURL"],
+							"port" -> OptionValue["Port"]
+						|>
+					]
 					],
 					"Username" -> "root",
 					"Password" -> OptionValue["RootPassword"],
@@ -517,7 +521,7 @@ Options[makeDBConnection] = {
 	"Username" -> "admin",
 		"Password" -> SystemCredential["db-pass"],
 	"UseConnectionPool" -> True,
-	"BaseURL" -> "localhost"
+	"BaseURL" -> "mariadb"
 };
 makeDBConnection[dbName_String : "", OptionsPattern[]]:= Enclose[
 	Needs["DatabaseLink`"];
