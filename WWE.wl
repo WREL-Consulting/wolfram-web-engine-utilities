@@ -503,12 +503,9 @@ initialiseDatabase[sqlFile_String, OptionsPattern[]]:= Enclose[
 			|>] // StringSplit[#, ";"]&;
 
 			Confirm[
-				SQLExecute[con, #]
-			]& /@ Prepend[
-				"DROP DATABASE IF EXISTS COREDatabase"
-			][
-				sqlCommands
-			]
+				SQLExecute[con, #],
+				"Error while executing SQL command: "<>#
+			]& /@ sqlCommands
 			,
 			CloseSQLConnection[con];
 		]
