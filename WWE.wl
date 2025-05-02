@@ -24,7 +24,7 @@ camelToSnakeCase = StringReplace[{
 	}]/*StringReplace[{
 		(StartOfString~~a_?(Not@*LowerCaseQ)):>ToLowerCase[a],
 		a_?(LowerCaseQ) ~~b_?(Not@*LowerCaseQ) :> (a<>"-"<>ToLowerCase[b]),
-		b_?(Not@*LowerCaseQ)~~a_?(LowerCaseQ)  :> ("-"<>ToLowerCase[b]<>a)	
+		b_?(Not@*LowerCaseQ)~~a_?(LowerCaseQ)  :> ("-"<>ToLowerCase[b]<>a)
 	}]/*ToLowerCase;
 
 Options[logError] = {
@@ -106,12 +106,25 @@ deployBuildFolder[buildDir_, location_String : "", OptionsPattern[]] :=
 	]
 ];
 
+getFileAtTopLevel // Options = {
+	"Level" -> 100
+};
+getFileAtTopLevel[fileName_String, location_String, OptionsPattern[]] :=
+	First[
+		SortBy[
+			FileNames[fileName, { location }, OptionValue["Level"]],
+			StringCount[#, "/"]&
+		],
+		$Failed
+	];
+
+
 Options[deployRepository] = {
 	"Initialize" -> False
 };
 deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		cloneCommand, cloneCode, buildCommand, buildCode, feLoc, outputLogLoc,
-		outputLog, ret, deployWL, errorlog, log, logDir, buildLoc,
+		outputLog, ret, deployWL, errorlog, log, logDir, buildLoc, packageJson,
 		cloneLink = repositoryAssoc["link"],
 		localDir = repositoryAssoc["local"],
 		init = If[OptionValue["Initialize"],
@@ -155,7 +168,8 @@ deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 			ConfirmAssert[cloneCode === 0, "Clone failed."];
 
 			(* If package.json exists, build and deploy the frontend *)
-			If[FileExistsQ[FileNameJoin[{localDir, "package.json"}]],
+			packageJson = getFileAtTopLevel["package.json", localDir];
+			If[!FailureQ[packageJson],
 				(* Define frontend build command *)
 				buildCommand = StringRiffle[{
 						"cd "<> localDir,
@@ -189,15 +203,15 @@ deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 			];
 
 			(* Deploy WL backend using project's deploy.wwe.wls script *)
-			deployWL = FileNames["deploy.wwe.wls", {localDir}, 4];
-			If[Length[deployWL] =!= 0,
+			deployWL = getFileAtTopLevel["deploy.wwe.wls", localDir];
+			If[!FailureQ[deployWL],
 				ConfirmAssert[
-					log["Running 'wolframscript -script "<> # <>init<>"'"];
+					log["Running 'wolframscript -script "<> deployWL <> init <> "'"];
 					Run[
-						"wolframscript -script "<> # <>init<>" >> '"<>outputLogLoc<>"' 2>&1"
+						"wolframscript -script "<> deployWL <>init<>" >> '"<>outputLogLoc<>"' 2>&1"
 					] === 0,
-					"'" <> # <> "' returned a nonzero code"
-				]& /@ deployWL
+					"'" <> deployWL <> "' returned a nonzero code"
+				]
 			]
 		]
 		,
