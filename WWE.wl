@@ -189,7 +189,7 @@ deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 
 				(* Deploy frontend build files *)
 				buildLoc = Cases[
-					FileNames["build-wwe", feLoc, 1],
+					FileNames["build-wwe", feLoc, 5],
 					_String?(Not @* StringContainsQ["node_modules"])
 				];
 				ConfirmAssert[
