@@ -4,6 +4,7 @@ BeginPackage["WWE`", {
 }];
 
 (* ::Section:: *)(* Public Symbols *)
+restartKernelPool::usage = "restartKernelPool[] restarts the kernel pool by calling the KillAll.jsp endpoint.";
 deployBuildFolder::usage = "deployBuildFolder[buildDir_, location_ : \"\"] deploys the build files inside `buildDir` to `location` in the Tomcat ROOT webapp directory.";
 deployRepository::usage = "deployRepository[repositoryAssoc_, OptionsPattern[]] deploys the repository at `repositoryAssoc` to the Tomcat ROOT webapp directory. \nOptions: \n\"InitializeDB\" -> True will initialize the database.";
 deployExpression::usage = "deployExpression[expr_, location_, OptionsPattern[]] deploys the expression `expr` to the Tomcat ROOT webapp directory at `location`.\ndeployExpression[expr_, OptionsPattern[]] deploys the expression `expr` to the Tomcat ROOT webapp directory at a random UUID endpoint.";
@@ -17,6 +18,17 @@ logError::usage = "logError[functionName_String, message_String] logs an error m
 CommandLineParse = ResourceFunction["CommandLineParse"];
 
 Begin["`Private`"];
+
+(* ::Section:: *)(* Utilities *)
+restartKernelPool[] := Enclose[
+	ConfirmAssert[
+		URLExecute["http://localhost/jsp/KillAll.jsp", "RawJSON"]["success"],
+		"Failed to restart the kernel pool"
+	];
+	Success["kernel-pool-restart", <|
+		"MessageTemplate" -> "Kernel pool restarted successfully"
+	|>]
+];
 
 camelToSnakeCase = StringReplace[{
 		PunctuationCharacter->"",
