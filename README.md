@@ -7,106 +7,161 @@ Exposed under the `` WWE` `` context.
 
 ## Deployment Functions
 
-- ### deployRepository
-  - | Form | Description |
+- ### DeployWebappRepository (alias: deployBuildFolder)
+  - #### Usage
+    | Form | Description |
     |------|-------------|
-    | `deployRepository[repositoryAssoc_RepoObj]` | Deploys the repository at `repositoryAssoc` to the Tomcat ROOT webapp directory |
+    | `DeployWebappRepository[repositoryAssoc_]` | Deploys the repository at `repositoryAssoc` to the Tomcat ROOT webapp directory |
 
     where:
     ```wl
-    RepoObj = <|
-      "link"   -> _String, (* SSH clone link to repositoy *)
+    <|
+      "link"   -> _String, (* SSH clone link to repository *)
       "name"   -> _String, (* Repository name *)
       "branch" -> _String, (* Branch to clone and track with CD endpoint *)
-      "local"  -> _?StringMatchQ["contents/*"], (* Local directory of repo *)
-      "prefix" -> _?StringMatchQ["/*"] (* The prefix used for any deployments *)
+      "local"  -> _String, (* Local directory of repo *)
+      "prefix" -> _String  (* The prefix used for any deployments *)
     |>
     ```
+  - #### Options
+    | Option | Pattern | Default | Description |
+    |--------|---------|---------|-------------|
+    | `"Initialize"` | `_?BooleanQ` | `False` | If `True`, will pass `--init` to any WWE deployment scripts it executes |
 
-  - | Option | Pattern | Default | Description |
-    |--------|---------|-------------|---------|
-    | `"Initialize"` | `_?BooleanQ` | `False` | If `True`, `deployRepository` will pass the `- -init` to to any WWE deployment scripts it executes |
+---
 
-   ---
+- ### DeployWebappFrontEnd (alias: deployBuildFolder)
 
-- ### deployBuildFolder
-  - | Form | Description |
+  - #### Usage
+    | Form | Description |
     |------|-------------|
-    | `deployBuildFolder[buildDir_?DirectoryQ]` | Deploys the build files inside `buildDir` to the root of the server `https://address/` |
-    | `deployBuildFolder[buildDir_?DirectoryQ, location_String]` | Deploys the build files inside `buildDir` at `https://address/{location}` |
+    | `DeployWebappFrontEnd[buildDir_]` | Deploys the build files inside `buildDir` to the root of the server `https://address/` |
+    | `DeployWebappFrontEnd[buildDir_, location_String]` | Deploys the build files inside `buildDir` at `https://address/{location}` |
 
-  - | Option | Pattern | Default | Description |
-    |--------|---------|-------------|---------|
-    | `"WebappLocation"` | `_?DirectoryQ` | `"/usr/local/tomcat/webapps/ROOT"` | The ROOT lo cation of the tomcat webapp directory |
 
-   ---
+  - #### Options
+    | Option | Pattern | Default | Description |
+    |--------|---------|---------|-------------|
+    | `"WebappLocation"` | `_String` | `"/usr/local/tomcat/webapps/ROOT"` | The ROOT location of the tomcat webapp directory |
 
-- ### deployExpression
-  - | Form | Description |
+---
+
+- ### DeployExpression
+
+  - #### Usage
+    | Form | Description |
     |------|-------------|
-    | `deployExpression[expr_]` | Deploys WL `expr` to `https://address/wl/{CreateUUID[]}` |
-    | `deployExpression[expr_, location_]` | Deploys WL `expr` to `https://address/wl/{l ocation}` |
+    | `DeployExpression[expr_]` | Deploys WL `expr` to `https://address/wl/{CreateUUID[]}` |
+    | `DeployExpression[expr_, location_]` | Deploys WL `expr` to `https://address/wl/{location}` |
 
-  - | Option | Pattern | Default | Description |
-    |--------|---------|-------------|---------|
-    | `OverwriteTarget` | `_?BooleanQ` | `True` | Controls whether to overwrite existing co ntent |
-    | `"WebappLocation"` | `_?DirectoryQ` | `"/usr/local/tomcat/webapps/ROOT"` | The ROOT lo cation of the tomcat webapp directory |
-    | `"ActiveExtension"` | `_String` | `"wl"` | The extension on the server which handles WL  requests using the GenerateHTTPResponse servlet |
 
-   ---
+  - #### Options
+    | Option | Pattern | Default | Description |
+    |--------|---------|---------|-------------|
+    | `OverwriteTarget` | `_?BooleanQ` | `True` | Controls whether to overwrite existing content |
+    | `"WebappLocation"` | `_String` | `"/usr/local/tomcat/webapps/ROOT"` | The ROOT location of the tomcat webapp directory |
+    | `"ActiveExtension"` | `_String` | `"wl"` | The extension on the server which handles WL requests using the GenerateHTTPResponse servlet |
 
-- ### addInitCode
-  - | Form | Description |
+---
+
+- ### AddWolframInitCode (alias: addInitCode)
+  - #### Usage
+    | Form | Description |
     |------|-------------|
-    | `addInitCode[initCode_]` | Adds `initCode` to the WWE initialization file |
+    | `AddWolframInitCode[initCode_]` | Adds `initCode` to the Wolfram Engine's `init.m` file |
 
-  - | Option | Pattern | Default | Description |
-    |--------|---------|-------------|---------|
-    | `"InitFile"` | `_?FileExistsQ` | `"/usr/share/Wolfram/Kernel/init.m"` | Location of the Wolfram `init.m` file |
+  - #### Options
+    | Option | Pattern | Default | Description |
+    |--------|---------|---------|-------------|
+    | `"InitFile"` | `_String` | `"/usr/share/Wolfram/Kernel/init.m"` | Location of the Wolfram `init.m` file |
 
-   ---
+---
 
-- ### addSupervisorProgram
-  - | Form | Description |
+- ### DefineSupervisorCommand (alias: addSupervisorCommand)
+  - #### Usage
+    | Form | Description |
     |------|-------------|
-    | `addSupervisorProgram[command_String, name_String]` | Adds program definition to su pervisord file under the name `name` with command `command` |
+    | `DefineSupervisorCommand[command_String, name_String]` | Adds program definition to supervisord file under the name `name` with command `command` |
 
-  - | Option | Pattern | Default | Description |
-    |--------|---------|-------------|---------|
+  - #### Options
+    | Option | Pattern | Default | Description |
+    |--------|---------|---------|-------------|
     | `"AutoStart"` | `_?BooleanQ` | `True` | Autostart the program |
-    | `"AutoRestart"` | `_?BooleanQ` | `True` | AutoRestart the program in the case of anm un expected crash |
-    | `"StdErrLogFile"` | `_?FileExistsQ` | `"/dev/stderr"` | File to pipe stderr to |
-    | `"StdOutLogFile"` | `_?FileExistsQ` | `"/dev/stdout"` | File to pipe stdout to |
+    | `"AutoRestart"` | `_?BooleanQ` | `True` | AutoRestart the program in the case of an unexpected crash |
+    | `"StdErrLogFile"` | `_String` | `"/dev/stderr"` | File to pipe stderr to |
+    | `"StdOutLogFile"` | `_String` | `"/dev/stdout"` | File to pipe stdout to |
 
-   ---
+---
+
+- ### DefineCronJob (alias: addCrontabCommand)
+  - #### Usage
+    | Form | Description |
+    |------|-------------|
+    | `DefineCronJob[command_String, cronSpec_String]` | Adds a command to the crontab file with the provided cronSpec |
+
+  - #### Options
+    | Option | Pattern | Default | Description |
+    |--------|---------|---------|-------------|
+    | `"CrontabFile"` | `_String` | `"/etc/crontab"` | Crontab file to write to |
+    | `"User"` | `_String` | `"root"` | User for the cron job |
+
+---
+
+- ### RestartKernelPool
+  - #### Usage
+    | Form | Description |
+    |------|-------------|
+    | `RestartKernelPool[]` | Restarts the kernel pool by calling the KillAll.jsp endpoint |
+
+---
+
+## Utility Functions
+
+- ### LogError (alias: logError)
+  - #### Usage
+    | Form | Description |
+    |------|-------------|
+    | `LogError[appName_String, functionName_String, message_String]` | Logs an event message to the log file `/var/log/appName/functionName-error.log` |
+
+  - #### Options
+    | Option | Pattern | Default | Description |
+    |--------|---------|---------|-------------|
+    | `"LogDirectory"` | `_String` | `"/var/log/"` | Directory that all generated logs will be saved in |
+
+---
 
 ## Database Functions
 
-- ### initialiseDatabase
-   - | Form | Description |
-     |------|-------------|
-     | `initialiseDatabase[sqlFile_]` | Initializes the database by executing the SQL commands in `sqlFile` |
+- ### WebappDatabaseInitialize (alias: initiliseDatabase)
+  - #### Usage
+    | Form | Description |
+    |------|-------------|
+    | `WebappDatabaseInitialize[sqlFile_]` | Initializes the database by executing the SQL commands in `sqlFile` |
 
-   - | Option | Pattern | Default | Description |
-     |--------|------|---------|----------------|
-     | `"RootPassword"` | `_String` | `SystemCredential["db-pass"]` | Password used for root connections to mariadb |
-     | `"DatabasePassword"` | `_String` | `SystemCredential["db-pass"]` | Password that will be used to connect to the created database (Uses string replacement rules to replace any \`dbPass\` in the SQL file with this password ) |
-     | `"Port"` | `_Integer` | `3306` | Port mariadb is listening on |
+  - #### Options
+    | Option | Pattern | Default | Description |
+    |--------|---------|---------|-------------|
+    | `"RootPassword"` | `_String` | `SystemCredential["db-pass"]` | Password used for root connections to mariadb |
+    | `"DatabasePassword"` | `_String` | `SystemCredential["db-pass"]` | Password that will be used to connect to the created database (uses string replacement rules to replace any `db-pass` in the SQL file with this password) |
+    | `"Port"` | `_Integer` | `3306` | Port mariadb is listening on |
+    | `"BaseURL"` | `_String` | `"mariadb"` | Base URL for mariadb connection |
 
-   ---
+---
 
-- ### makeDBConnection
-   - | Form | Description |
-     |------|-------------|
-     | `makeDBConnection[]` | Creates a connection to the mariadb |
-     | `makeDBConnection[dbName_]` | Creates a connection to the database `dbName` |
+- ### WebappDatabaseConnect (alias: makeDBConnection)
+  - #### Usage
+    | Form | Description |
+    |------|-------------|
+    | `WebappDatabaseConnect[]` | Creates a connection to the mariadb |
+    | `WebappDatabaseConnect[dbName_]` | Creates a connection to the database `dbName` |
 
-   - | Option | Pattern | Default | Description |
-     |--------|------|---------|----------------|
-     | `"Username"` | `_String` | `"admin"` | Username used to connect to the database |
-     | `"Password"` | `_String` | `SystemCredential["db-pass"]` | Password used to connect to th e database |
-     | `"UseConnectionPool"` | `_?BooleanQ` | `True` | Use mariadb connection pool |
-     | `"BaseURL"` | `_String` | `"localhost"` | Base URL for mariadb connection |
-     | `"Port"` | `_Integer` | `3306` | Port mariadb is listening on |
+  - #### Options
+    | Option | Pattern | Default | Description |
+    |--------|---------|---------|-------------|
+    | `"Username"` | `_String` | `"admin"` | Username used to connect to the database |
+    | `"Password"` | `_String` | `SystemCredential["db-pass"]` | Password used to connect to the database |
+    | `"UseConnectionPool"` | `_?BooleanQ` | `True` | Use mariadb connection pool |
+    | `"BaseURL"` | `_String` | `"mariadb"` | Base URL for mariadb connection |
+    | `"Port"` | `_Integer` | `3306` | Port mariadb is listening on |
 
-   ---
+---

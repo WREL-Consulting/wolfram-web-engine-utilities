@@ -2,25 +2,75 @@
 BeginPackage["WWE`", {
 	"DatabaseLink`"
 }];
-
+(* ========================================================================== *)
 (* ::Section:: *)(* Public Symbols *)
-restartKernelPool::usage = "restartKernelPool[] restarts the kernel pool by calling the KillAll.jsp endpoint.";
-deployBuildFolder::usage = "deployBuildFolder[buildDir_, location_ : \"\"] deploys the build files inside `buildDir` to `location` in the Tomcat ROOT webapp directory.";
-deployRepository::usage = "deployRepository[repositoryAssoc_, OptionsPattern[]] deploys the repository at `repositoryAssoc` to the Tomcat ROOT webapp directory. \nOptions: \n\"InitializeDB\" -> True will initialize the database.";
-deployExpression::usage = "deployExpression[expr_, location_, OptionsPattern[]] deploys the expression `expr` to the Tomcat ROOT webapp directory at `location`.\ndeployExpression[expr_, OptionsPattern[]] deploys the expression `expr` to the Tomcat ROOT webapp directory at a random UUID endpoint.";
-addInitCode::usage = "addInitCode[initCode_] adds the initialization code `initCode` to the Wolfram Engine's init.m file.";
-initialiseDatabase::usage = "initialiseDatabase[sqlFile_] initializes the database using the SQL commands in `sqlFile`.";
-makeDBConnection::usage = "makeDBConnection[dbName_ : \"\"] creates a connection to the database `dbName`.";
-addSupervisorProgram::usage = "addSupervisorProgram[command_String, name_String] adds a program to the supervisord configuration file.";
-addCrontabCommand::usage = "addCrontabCommand[command_String, cronSpec_String] adds a command to the crontab file with the provided cronSpec.";
-logError::usage = "logError[functionName_String, message_String] logs an error message to the log file.";
+RestartKernelPool::usage = "RestartKernelPool[] restarts the kernel pool by calling the KillAll.jsp endpoint.";
+DeployWebappFrontEnd::usage = "DeployWebappFrontEnd[buildDir_, location_ : \"\"] deploys the build files inside `buildDir` to `location` in the Tomcat ROOT webapp directory.";
+DeployWebappRepository::usage = "DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] deploys the repository at `repositoryAssoc` to the Tomcat ROOT webapp directory. \nOptions: \n\"InitializeDB\" -> True will initialize the database.";
+DeployExpression::usage = "DeployExpression[expr_, location_, OptionsPattern[]] deploys the expression `expr` to the Tomcat ROOT webapp directory at `location`.\nDeployExpression[expr_, OptionsPattern[]] deploys the expression `expr` to the Tomcat ROOT webapp directory at a random UUID endpoint.";
+AddWolframInitCode::usage = "AddWolframInitCode[initCode_] adds the initialization code `initCode` to the Wolfram Engine's init.m file.";
+WebappDatabaseInitialize::usage = "WebappDatabaseInitialize[sqlFile_] initializes the database using the SQL commands in `sqlFile`.";
+WebappDatabaseConnect::usage = "WebappDatabaseConnect[dbName_ : \"\"] creates a connection to the database `dbName`.";
+DefineSupervisorCommand::usage = "DefineSupervisorCommand[command_String, name_String] adds a program to the supervisord configuration file.";
+DefineCronJob::usage = "DefineCronJob[command_String, cronSpec_String] adds a command to the crontab file with the provided cronSpec.";
+LogError::usage = "LogError[appName_String, functionName_String, message_String] logs an event message to the log file /var/log/appName/functionName-error.log.";
 
+(* ::Subsection:: *)(* Aliases *)(* For backwards compatibility *)
+deployBuildFolder = DeployWebappFrontEnd;
+initiliseDatabase = WebappDatabaseInitialize;
+makeDBConnection = WebappDatabaseConnect;
+addSupervisorCommand = DefineSupervisorCommand;
+addInitCode = AddWolframInitCode;
+addCrontabCommand = DefineCronJob;
+logError = LogError;
 CommandLineParse = ResourceFunction["CommandLineParse"];
 
 Begin["`Private`"];
+(* ========================================================================== *)
+(* ::Section:: *)(* Utility functions *)
+camelToSnakeCase = (
+	StringReplace[{
+		PunctuationCharacter -> "",
+		" " -> "-"
+	}] /* StringReplace[{
+		(StartOfString~~a_?(Not@*LowerCaseQ)):>ToLowerCase[a],
+		a_?(LowerCaseQ) ~~b_?(Not@*LowerCaseQ) :> (a<>"-"<>ToLowerCase[b]),
+		b_?(Not@*LowerCaseQ)~~a_?(LowerCaseQ)  :> ("-"<>ToLowerCase[b]<>a)
+	}] /* ToLowerCase
+);
 
-(* ::Section:: *)(* Utilities *)
-restartKernelPool[] := Enclose[
+crontabSpecValidQ = StringMatchQ[
+	(
+		("\\*" | (ToString /@ Range[0, 59])) ~~
+		("," ~~ ("\\*" | (ToString /@ Range[0, 59])))...
+	) ~~ " " ~~ (
+		("\\*" | (ToString /@ Range[0, 23])) ~~
+		("," ~~ ("\\*" | (ToString /@ Range[0, 23])))...
+	) ~~ " " ~~ (
+		("\\*" | (ToString /@ Range[1, 31])) ~~
+		("," ~~ ("\\*" | (ToString /@ Range[1, 31])))...
+	) ~~ " " ~~ (
+		("\\*" | (ToString /@ Range[1, 12]) | {
+			"jan","feb","mar","apr","may","jun",
+			"jul","aug","sep","oct","nov","dec"
+		}) ~~
+		("," ~~ ("\\*" | (ToString /@ Range[1, 12]) | {
+			"jan","feb","mar","apr","may","jun",
+			"jul","aug","sep","oct","nov","dec"
+		}))...
+	) ~~ " " ~~ (
+		("\\*" | (ToString /@ Range[0, 6]) | {
+			"mon","tue","wed","thu","fri","sat","sun"
+		}) ~~
+		("," ~~ ("\\*" | (ToString /@ Range[0, 6]) | {
+			"mon","tue","wed","thu","fri","sat","sun"
+		}))...
+	)
+];
+
+(* ========================================================================== *)
+(* ::Section:: *)(* Main Helper Functions *)
+RestartKernelPool[] := Enclose[
 	ConfirmAssert[
 		URLExecute["http://localhost/jsp/KillAll.jsp", "RawJSON"]["success"],
 		"Failed to restart the kernel pool"
@@ -30,44 +80,35 @@ restartKernelPool[] := Enclose[
 	|>]
 ];
 
-camelToSnakeCase = StringReplace[{
-		PunctuationCharacter->"",
-		" " -> "-"
-	}]/*StringReplace[{
-		(StartOfString~~a_?(Not@*LowerCaseQ)):>ToLowerCase[a],
-		a_?(LowerCaseQ) ~~b_?(Not@*LowerCaseQ) :> (a<>"-"<>ToLowerCase[b]),
-		b_?(Not@*LowerCaseQ)~~a_?(LowerCaseQ)  :> ("-"<>ToLowerCase[b]<>a)
-	}]/*ToLowerCase;
-
-Options[logError] = {
+logError // Options = {
 	"LogDirectory" -> "/var/log/"
 };
-logError[ appName_String, functionName_String, message_String, OptionsPattern[] ] := Module[{
-		errStr,
-		dir = FileNameJoin[{
-			OptionValue["LogDirectory"], camelToSnakeCase[appName]
-		}],
-		fileName = ToLowerCase[
-			StringTrim @ camelToSnakeCase @ functionName
-		] <> "-error.log"
-	},
+LogError[appName_String, functionName_String, message_String, OptionsPattern[]] :=
+	Module[{
+			errStr,
+			dir = FileNameJoin[{
+				OptionValue["LogDirectory"], camelToSnakeCase[appName]
+			}],
+			fileName = ToLowerCase[
+				StringTrim @ camelToSnakeCase @ functionName
+			] <> "-error.log"
+		},
 
-	If[!DirectoryQ[dir],
-		CreateDirectory[dir]
+		If[!DirectoryQ[dir],
+			CreateDirectory[dir]
+		];
+
+		WithCleanup[
+			errStr = OpenAppend @ FileNameJoin[{dir, fileName}],
+			WriteString[ errStr, message, "\n" ],
+			Close[ errStr ]
+		]
 	];
 
-	WithCleanup[
-		errStr = OpenAppend @ FileNameJoin[{dir, fileName}],
-		WriteString[ errStr, message, "\n" ],
-		Close[ errStr ]
-	]
-];
-
-(* ::Section:: *)(* Deployment helper functions *)
-Options[deployBuildFolder] = {
+DeployWebappFrontEnd // Options = {
 	"WebappLocation" -> "/usr/local/tomcat/webapps/ROOT"
 };
-deployBuildFolder[buildDir_, location_String : "", OptionsPattern[]] :=
+DeployWebappFrontEnd[buildDir_, location_String : "", OptionsPattern[]] :=
 	Enclose[
 		With[{
 			deployLoc = FileNameJoin[{
@@ -76,7 +117,7 @@ deployBuildFolder[buildDir_, location_String : "", OptionsPattern[]] :=
 		},
 		(* If location doesn't exist, create it *)
 		If[!DirectoryQ[deployLoc],
-			Print["\033[2m[deployBuildFolder]:\033[22m Creating directory:", deployLoc];
+			Print["\033[2m[DeployWebappFrontEnd]:\033[22m Creating directory:", deployLoc];
 			Confirm[
 				CreateDirectory[deployLoc],
 				"Failed to create directory"
@@ -85,7 +126,7 @@ deployBuildFolder[buildDir_, location_String : "", OptionsPattern[]] :=
 
 		(* Delete any existing duplicate files *)
 		If[DirectoryQ[deployLoc],
-			Print["\033[2m[deployBuildFolder]:\033[22m Deleting existing deployment files at ", deployLoc];
+			Print["\033[2m[DeployWebappFrontEnd]:\033[22m Deleting existing deployment files at ", deployLoc];
 
 			With[{ existingFile = FileNameJoin[{ deployLoc, # }] },
 				If[FileExistsQ[existingFile],
@@ -130,11 +171,10 @@ getFileAtTopLevel[fileName_String, location_String, OptionsPattern[]] :=
 		$Failed
 	];
 
-
-Options[deployRepository] = {
+DeployWebappRepository // Options = {
 	"Initialize" -> False
 };
-deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
+DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		cloneCommand, cloneCode, buildCommand, buildCode, feLoc, outputLogLoc,
 		outputLog, ret, deployWL, errorlog, log, logDir, buildLoc, packageJson,
 		cloneLink = repositoryAssoc["link"],
@@ -147,7 +187,7 @@ deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 
 	(* Define logging function *)
 	log = Function[
-		BinaryWrite[outputLog, Print["\033[2m[deployRepository]:\033[22m ", #]; ToString[#] <> "\n"];
+		BinaryWrite[outputLog, Print["\033[2m[DeployWebappRepository]:\033[22m ", #]; ToString[#] <> "\n"];
 		#
 	];
 
@@ -209,7 +249,7 @@ deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 					"Could not find build-wwe folder"
 				];
 				Confirm[#, "Frontend deployment failed"]& @
-					deployBuildFolder[
+					DeployWebappFrontEnd[
 						First[buildLoc],
 						repositoryAssoc["prefix"]
 					];
@@ -246,12 +286,12 @@ deployRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 	]
 ];
 
-Options[deployExpression] = {
+DeployExpression // Options = {
 	OverwriteTarget -> True,
 	"WebappLocation" -> "/usr/local/tomcat/webapps/ROOT",
 	"ActiveExtension" -> "wl"
 };
-deployExpression[expr_, location_String : Automatic, OptionsPattern[]] :=
+DeployExpression[expr_, location_String : Automatic, OptionsPattern[]] :=
 	Module[{
 		loc = location /. Automatic -> CreateUUID[],
 		dir = FileNameJoin[{
@@ -296,13 +336,15 @@ deployExpression[expr_, location_String : Automatic, OptionsPattern[]] :=
 	]
 ];
 
-Attributes[addInitCode] = {
+AddWolframInitCode::noconf = "Could not find init.m file at `1`";
+AddWolframInitCode::exists = "Code `1` already exists in init.m file";
+AddWolframInitCode // Attributes = {
 	HoldFirst
 };
-Options[addInitCode] = {
+AddWolframInitCode // Options = {
 	"InitFile" -> "/usr/share/Wolfram/Kernel/init.m"
 };
-addInitCode[initCode_, OptionsPattern[]] := Enclose @ Module[{
+AddWolframInitCode[initCode_, OptionsPattern[]] := Enclose @ Module[{
 		stream,
 		initFileDir = OptionValue["InitFile"],
 		initFileStr,
@@ -313,7 +355,7 @@ addInitCode[initCode_, OptionsPattern[]] := Enclose @ Module[{
 
 	(* Check that the init file exists *)
 	If[!FileExistsQ[initFileDir],
-		Message[addInitCode::noconf, initFileDir];
+		Message[AddWolframInitCode::noconf, initFileDir];
 		Return[$Failed]
 	];
 
@@ -328,7 +370,7 @@ addInitCode[initCode_, OptionsPattern[]] := Enclose @ Module[{
 			initFileStr,
 			StringDelete[codeStr, WhitespaceCharacter]
 		],
-		Message[addInitCode::exists, codeStr];
+		Message[AddWolframInitCode::exists, codeStr];
 		Return[False]
 	];
 
@@ -342,13 +384,15 @@ addInitCode[initCode_, OptionsPattern[]] := Enclose @ Module[{
 	True
 ];
 
-Options[addSupervisorProgram] = {
+DefineSupervisorCommand::noconf = "Could not find supervisord.conf file at /etc/supervisord.conf";
+DefineSupervisorCommand::exists = "Program `1` already exists in supervisord.conf file";
+DefineSupervisorCommand // Options = {
 	"AutoStart" -> True,
 	"AutoRestart" -> True,
 	"StdErrLogFile" -> "/dev/stderr",
 	"StdOutLogFile" -> "/dev/stdout"
 };
-addSupervisorProgram[command_String, name_String, OptionsPattern[]] := Module[{
+DefineSupervisorCommand[command_String, name_String, OptionsPattern[]] := Module[{
 		stream, rawFile
 	},
 
@@ -359,13 +403,13 @@ addSupervisorProgram[command_String, name_String, OptionsPattern[]] := Module[{
 				Import["/etc/supervisord.conf", "String"],
 				WhitespaceCharacter
 			],
-			Message[addSupervisorProgram::noconf];
+			Message[DefineSupervisorCommand::noconf];
 			Return[$Failed]
 		];
 
 		(* Check if program already exists in supervisord.conf file *)
 		If[StringContainsQ[rawFile, StringTemplate["[program:``]"][name] ],
-			Message[addSupervisorProgram::exists, name];
+			Message[DefineSupervisorCommand::exists, name];
 			Return[False]
 		];
 
@@ -414,90 +458,62 @@ addSupervisorProgram[command_String, name_String, OptionsPattern[]] := Module[{
 	]
 ];
 
-Options[addCrontabCommand] = {
+DefineCronJob::exists = "Command `1` already exists in crontab file";
+DefineCronJob::noconf = "Could not find crontab file at `1`";
+DefineCronJob // Options = {
 	"CrontabFile" -> "/etc/crontab",
 	"User" -> "root"
 };
-addCrontabCommand[
-	command_String,
-	cronSpec_String?(
-		StringMatchQ[
-			(
-				("\\*" | (ToString /@ Range[0, 59])) ~~
-				("," ~~ ("\\*" | (ToString /@ Range[0, 59])))...
-			) ~~ " " ~~ (
-				("\\*" | (ToString /@ Range[0, 23])) ~~
-				("," ~~ ("\\*" | (ToString /@ Range[0, 23])))...
-			) ~~ " " ~~ (
-				("\\*" | (ToString /@ Range[1, 31])) ~~
-				("," ~~ ("\\*" | (ToString /@ Range[1, 31])))...
-			) ~~ " " ~~ (
-				("\\*" | (ToString /@ Range[1, 12]) | {
-					"jan","feb","mar","apr","may","jun",
-					"jul","aug","sep","oct","nov","dec"
-				}) ~~
-				("," ~~ ("\\*" | (ToString /@ Range[1, 12]) | {
-					"jan","feb","mar","apr","may","jun",
-					"jul","aug","sep","oct","nov","dec"
-				}))...
-			) ~~ " " ~~ (
-				("\\*" | (ToString /@ Range[0, 6]) | {
-					"mon","tue","wed","thu","fri","sat","sun"
-				}) ~~
-				("," ~~ ("\\*" | (ToString /@ Range[0, 6]) | {
-					"mon","tue","wed","thu","fri","sat","sun"
-				}))...
-			)
-		]
-	),
-	OptionsPattern[]
-] := Module[
-	{
-		crontabFile = OptionValue["CrontabFile"],
-		existingCrontab, crontabStr, stream, res
-	},
+DefineCronJob[command_String, cronSpec_String?crontabSpecValidQ, OptionsPattern[]] :=
+	Module[
+		{
+			crontabFile = OptionValue["CrontabFile"],
+			existingCrontab, crontabStr, stream, res
+		},
 
-	res = Enclose[
+		res = Enclose[
 
-		If[!FileExistsQ[crontabFile],
-			Message[addCrontabCommand::noconf, crontabFile];
-			Return[$Failed]
+			If[!FileExistsQ[crontabFile],
+				Message[DefineCronJob::noconf, crontabFile];
+				Return[$Failed]
+			];
+
+			existingCrontab = Confirm @ Import[crontabFile,
+				"Text"
+			] // StringDelete[WhitespaceCharacter];
+
+			If[StringContainsQ[existingCrontab, StringDelete[command, WhitespaceCharacter]],
+				Message[DefineCronJob::exists, command];
+				Return[False]
+			];
+
+			crontabStr = StringRiffle[{
+				cronSpec, OptionValue["User"], command
+			}];
+			WithCleanup[
+				stream = Confirm @ OpenAppend[crontabFile],
+				Confirm @ WriteString[stream, crontabStr, "\n"],
+				Close[stream]
+			];
+			True
 		];
-
-		existingCrontab = Confirm @ Import[crontabFile,
-			"Text"
-		] // StringDelete[WhitespaceCharacter];
-
-		If[StringContainsQ[existingCrontab, StringDelete[command, WhitespaceCharacter]],
-			Message[addCrontabCommand::exists, command];
-			Return[False]
-		];
-
-		crontabStr = StringRiffle[{
-			cronSpec, OptionValue["User"], command
-		}];
-		WithCleanup[
-			stream = Confirm @ OpenAppend[crontabFile],
-			Confirm @ WriteString[stream, crontabStr, "\n"],
-			Close[stream]
-		];
-		True
+		res /. _?FailureQ -> $Failed
 	];
-	res /. _?FailureQ -> $Failed
-];
 
+(* ========================================================================== *)
 (* ::Section:: *)(* Database Helper Functions *)
-Options[initialiseDatabase] = {
+WebappDatabaseInitialize::nofile = "Could not find sql file at `1`";
+WebappDatabaseInitialize // Options = {
 	"RootPassword" -> SystemCredential["db-pass"],
 	"DatabasePassword" -> SystemCredential["db-pass"],
 	"Port" -> 3306,
 	"BaseURL" -> "mariadb"
 };
-initialiseDatabase[sqlFile_String, OptionsPattern[]]:= Enclose[
+WebappDatabaseInitialize[sqlFile_String, OptionsPattern[]]:= Enclose[
 	Module[{con, sqlCommands},
 
 		If[FileExistsQ[sqlFile] === False,
-			Message[initialiseDatabase::nofile, sqlFile];
+			Message[WebappDatabaseInitialize::nofile, sqlFile];
 			Return[$Failed]
 		];
 
@@ -540,14 +556,14 @@ initialiseDatabase[sqlFile_String, OptionsPattern[]]:= Enclose[
 	]
 ];
 
-Options[makeDBConnection] = {
+WebappDatabaseConnect // Options = {
 	"Port" -> 3306,
 	"Username" -> "admin",
 		"Password" -> SystemCredential["db-pass"],
 	"UseConnectionPool" -> True,
 	"BaseURL" -> "mariadb"
 };
-makeDBConnection[dbName_String : "", OptionsPattern[]]:= Enclose[
+WebappDatabaseConnect[dbName_String : "", OptionsPattern[]]:= Enclose[
 	Needs["DatabaseLink`"];
 	Confirm[
 		OpenSQLConnection[
@@ -573,15 +589,7 @@ makeDBConnection[dbName_String : "", OptionsPattern[]]:= Enclose[
 	]
 ];
 
-(* ::Section:: *)(* Messages *)
-addSupervisorProgram::noconf = "Could not find supervisord.conf file at /etc/supervisord.conf";
-addSupervisorProgram::exists = "Program `1` already exists in supervisord.conf file";
-addCrontabCommand::exists = "Command `1` already exists in crontab file";
-addCrontabCommand::noconf = "Could not find crontab file at `1`";
-addInitCode::noconf = "Could not find init.m file at `1`";
-addInitCode::exists = "Code `1` already exists in init.m file";
-initialiseDatabase::nofile = "Could not find sql file at `1`";
-
+(* ========================================================================== *)
 (* ::Section:: *)(* End *)
 End[];
 EndPackage[];
