@@ -16,6 +16,8 @@ DefineCronJob::usage = "DefineCronJob[command_String, cronSpec_String] adds a co
 LogError::usage = "LogError[appName_String, functionName_String, message_String] logs an event message to the log file /var/log/appName/functionName-error.log.";
 
 (* ::Subsection:: *)(* Aliases *)(* For backwards compatibility *)
+deployRepository = DeployWebappRepository;
+deployExpression = DeployExpression;
 deployBuildFolder = DeployWebappFrontEnd;
 initiliseDatabase = WebappDatabaseInitialize;
 makeDBConnection = WebappDatabaseConnect;
