@@ -24,6 +24,7 @@ addInitCode = AddWolframInitCode;
 addCrontabCommand = DefineCronJob;
 logError = LogError;
 CommandLineParse = ResourceFunction["CommandLineParse"];
+ANSITools = ResourceFunction["ANSITools"];
 
 Begin["`Private`"];
 (* ========================================================================== *)
@@ -507,7 +508,8 @@ WebappDatabaseInitialize // Options = {
 	"RootPassword" -> SystemCredential["db-pass"],
 	"DatabasePassword" -> SystemCredential["db-pass"],
 	"Port" -> 3306,
-	"BaseURL" -> "mariadb"
+	"BaseURL" -> "mariadb",
+	"TemplateParameters" -> <||>
 };
 WebappDatabaseInitialize[sqlFile_String, OptionsPattern[]]:= Enclose[
 	Module[{con, sqlCommands},
@@ -542,7 +544,8 @@ WebappDatabaseInitialize[sqlFile_String, OptionsPattern[]]:= Enclose[
 			sqlCommands = StringTemplate[
 				Import[sqlFile, "Text"]
 			][<|
-				"db-pass" -> OptionValue["DatabasePassword"]
+				"db-pass" -> OptionValue["DatabasePassword"],
+				OptionValue["TemplateParameters"]
 			|>] // StringSplit[#, ";"]&;
 
 			Confirm[
@@ -559,7 +562,7 @@ WebappDatabaseInitialize[sqlFile_String, OptionsPattern[]]:= Enclose[
 WebappDatabaseConnect // Options = {
 	"Port" -> 3306,
 	"Username" -> "admin",
-		"Password" -> SystemCredential["db-pass"],
+	"Password" -> SystemCredential["db-pass"],
 	"UseConnectionPool" -> True,
 	"BaseURL" -> "mariadb"
 };
