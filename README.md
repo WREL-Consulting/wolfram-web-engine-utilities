@@ -54,7 +54,6 @@ Exposed under the `` WWE` `` context.
     | `DeployExpression[expr_]` | Deploys WL `expr` to `https://address/wl/{CreateUUID[]}` |
     | `DeployExpression[expr_, location_]` | Deploys WL `expr` to `https://address/wl/{location}` |
 
-
   - #### Options
     | Option | Pattern | Default | Description |
     |--------|---------|---------|-------------|
@@ -145,6 +144,7 @@ Exposed under the `` WWE` `` context.
     | `"DatabasePassword"` | `_String` | `SystemCredential["db-pass"]` | Password that will be used to connect to the created database (uses string replacement rules to replace any `db-pass` in the SQL file with this password) |
     | `"Port"` | `_Integer` | `3306` | Port mariadb is listening on |
     | `"BaseURL"` | `_String` | `"mariadb"` | Base URL for mariadb connection |
+    | `"TemplateParameters"` | `_Association` | `Association[]` | Additional string template parameters used inside the SQL file |
 
 ---
 
