@@ -1,9 +1,9 @@
 PacletObject[<|
 	"Name" -> "WWE",
-	"Version" -> "2.0.4",
+	"Version" -> "2.1.0",
 	"Extensions" -> {
 		{"Kernel",
-			"Root" -> ".",
+			"Root" -> "Kernel",
 			"Context" -> "WWE`"
 		}
 	}
