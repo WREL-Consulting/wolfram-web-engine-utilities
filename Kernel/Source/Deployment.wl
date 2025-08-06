@@ -83,7 +83,7 @@ getFileAtTopLevel[fileName_String, location_String, OptionsPattern[]] :=
 (* -------------------------------------------------------------------------- *)
 (* ::Section:: *)(* DeployWebappRepository *)
 (* Description:  Deploys a webapp repository to the Tomcat ROOT webapp directory
- * Return:       _ServiceDeployment | $Failed
+ * Return:       True | $Failed
  *)
 DeployWebappRepository // Options = {
 	"Initialize" -> False
@@ -93,13 +93,14 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		ret, deployWL, errorlog, buildLoc, packageJson,
 		cloneLink = repositoryAssoc["link"],
 		localDir = repositoryAssoc["local"],
-		log = LogError["WWE", "DeployWebappRepository", Print[#];#]&,
+		log = WWE`LogError["WWE", "DeployWebappRepository", Print[#];#]&,
 		init = If[OptionValue["Initialize"],
 			" --init",
 			""
 		]
 	},
 	ret = Enclose[
+		(* Clone in files *)
 		Switch[repositoryAssoc["type"],
 			"git",
 				cloneCommand = StringRiffle[{
@@ -115,18 +116,24 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				ConfirmAssert[cloneRes === 0, "Clone failed."];
 			,
 			"paclet",
-				ExtractArchive[cloneLink, "/contents"]
+				localDir = ParentDirectory @ Confirm[
+					First[
+						ExtractArchive[cloneLink, "/contents"],
+						$Failed
+					],
+					"Failed to extract paclet archive"
+				],
+			"sftp",
+				$Failed (* WIP *)
 			,
 			_,
 				$Failed
 		];
-
-		(* If package.json exists, build and deploy the frontend *)
+		(* Build and deploy the frontend *)
 		packageJson = getFileAtTopLevel["package.json", localDir];
 		feLoc = DirectoryName[packageJson];
 		If[!FailureQ[packageJson],
 			(* Define frontend build command *)
-
 			buildCommand = StringRiffle[{
 					"cd "<> feLoc,
 					"bun install",
@@ -134,7 +141,6 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				},
 				"&&"
 			];
-
 			(* Run frontend build command *)
 			log["Running " <> buildCommand];
 			buildCode = Run[buildCommand];
@@ -156,8 +162,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 					repositoryAssoc["prefix"]
 				];
 		];
-
-		(* Deploy WL backend using project's deploy.wwe.wls script *)
+		(* Deploy backend using project's deploy.wwe.wls script *)
 		deployWL = getFileAtTopLevel["deploy.wwe.wls", localDir];
 		If[!FailureQ[deployWL],
 			ConfirmAssert[
@@ -203,9 +208,7 @@ DeployExpression[expr_, location_String : Automatic, OptionsPattern[]] :=
 		}],
 		deployment
 	},
-
 	Enclose[
-
 		(* Create directory id it doesn't exist *)
 		If[!DirectoryQ[dir],
 			Confirm[
@@ -213,7 +216,6 @@ DeployExpression[expr_, location_String : Automatic, OptionsPattern[]] :=
 				"Failed to create directory"
 			]
 		];
-
 		(* Export main index file *)
 		deployment = Confirm[
 			Export[
@@ -227,14 +229,11 @@ DeployExpression[expr_, location_String : Automatic, OptionsPattern[]] :=
 			],
 			"Failed to export index.wl"
 		];
-
-		(* Return 'fake' service deployment object *)
 		ServiceDeployment[<|
 			"Name" -> "WolframWebEngine",
 			"Resource" -> deployment,
 			"URL" -> FileNameJoin[{"/",loc}]
 		|>]
-
 	]
 ];
 
