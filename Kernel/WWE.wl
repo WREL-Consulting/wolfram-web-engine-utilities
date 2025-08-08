@@ -5,6 +5,7 @@
 	"Private`",
 
 	"Source`Utilities`",
+	"Source`ServerTools`",
 	"Source`Database`",
 	"Source`Utilities`"
 }
