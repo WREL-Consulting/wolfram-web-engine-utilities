@@ -98,9 +98,12 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				ConfirmAssert[cloneRes === 0, "Clone failed."];
 			,
 			"paclet",
-				localDir = PacletInstall[repositoryAssoc["name"],
-					"Site" -> repositoryAssoc["site"]
-				]["Location"];
+				localDir = Echo[
+					PacletInstall[repositoryAssoc["name"],
+						"Site" -> repositoryAssoc["site"],
+						ForceVersionInstall -> True
+					]["Location"]
+				];
 			,
 			"sftp",
 				$Failed (* WIP *)
@@ -109,7 +112,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				$Failed
 		];
 		(* Build and deploy the frontend *)
-		packageJson = getFileAtTopLevel["package.json", localDir];
+		packageJson = Echo @ getFileAtTopLevel["package.json", localDir];
 		feLoc = DirectoryName[packageJson];
 		If[!FailureQ[packageJson],
 			buildCommand =
