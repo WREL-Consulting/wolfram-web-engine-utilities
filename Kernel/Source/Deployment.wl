@@ -72,10 +72,8 @@ DeployWebappRepository // Options = {
 	"Initialize" -> False
 };
 DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
-		cloneRes, cloneCommand, buildCommand, buildCode, feLoc, outputLogLoc,
-		deployWL, buildLoc, packageJson, wlDeployCommand,
-		cloneLink = repositoryAssoc["link"],
-		localDir = repositoryAssoc["local"],
+		cloneRes, cloneCommand, buildCommand, buildCode, feLoc, cloneLink,
+		deployWL, buildLoc, packageJson, wlDeployCommand, localDir,
 		log = WWE`LogError["WWE", "DeployWebappRepository", Print[#];#]&,
 		init = If[OptionValue["Initialize"],
 			" --init",
@@ -86,6 +84,8 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		(* Clone in files *)
 		Switch[repositoryAssoc["type"],
 			"git",
+				cloneLink = repositoryAssoc["remote"];
+				localDir = repositoryAssoc["local"];
 				cloneCommand = StringRiffle[{
 					"/scripts/git-clone",
 						cloneLink,
@@ -98,16 +98,10 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				ConfirmAssert[cloneRes === 0, "Clone failed."];
 			,
 			"paclet",
-				RenameDirectory[
-					Confirm[
-						ExtractPacletArchive[
-							URLDownload[cloneLink],
-							ParentDirectory[localDir]
-						],
-						"Failed to extract paclet archive"
-					],
-					localDir
-				],
+				localDir = PacletInstall[repositoryAssoc["name"],
+					"Site" -> repositoryAssoc["site"]
+				]["Location"];
+			,
 			"sftp",
 				$Failed (* WIP *)
 			,
