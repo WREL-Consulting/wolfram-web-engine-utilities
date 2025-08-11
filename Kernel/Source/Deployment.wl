@@ -101,6 +101,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				ConfirmAssert[cloneRes === 0, "Clone failed."];
 			,
 			"paclet",
+				PacletUninstall[ repositoryAssoc["name"] ];
 				localDir =
 					PacletInstall[repositoryAssoc["name"],
 						PacletSite -> repositoryAssoc["site"],
