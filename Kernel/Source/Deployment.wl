@@ -98,12 +98,11 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				ConfirmAssert[cloneRes === 0, "Clone failed."];
 			,
 			"paclet",
-				localDir = Echo[
+				localDir =
 					PacletInstall[repositoryAssoc["name"],
-						"Site" -> repositoryAssoc["site"],
+						PacletSite -> repositoryAssoc["site"],
 						ForceVersionInstall -> True
-					]["Location"]
-				];
+					]["Location"];
 			,
 			"sftp",
 				$Failed (* WIP *)
@@ -112,7 +111,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				$Failed
 		];
 		(* Build and deploy the frontend *)
-		packageJson = Echo @ getFileAtTopLevel["package.json", localDir];
+		packageJson = getFileAtTopLevel["package.json", localDir];
 		feLoc = DirectoryName[packageJson];
 		If[!FailureQ[packageJson],
 			buildCommand =
@@ -151,7 +150,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 			log["[EXEC]: " <> wlDeployCommand];
 			ConfirmAssert[
 				Run[
-					StringTemplate["chmod +x ``; ``"][ wlDeployCommand ]
+					StringTemplate["chmod +x `` && ``"][ wlDeployCommand ]
 				] === 0,
 				"Backend build and deploy script failed"
 			]
