@@ -150,7 +150,9 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 			wlDeployCommand = deployWL <> init;
 			log["[EXEC]: " <> wlDeployCommand];
 			ConfirmAssert[
-				Run[ wlDeployCommand ] === 0,
+				Run[
+					StringTemplate["chmod +x ``; ``"][ wlDeployCommand ]
+				] === 0,
 				"Backend build and deploy script failed"
 			]
 		];
