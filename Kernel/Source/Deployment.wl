@@ -150,7 +150,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 			log["[EXEC]: " <> wlDeployCommand];
 			ConfirmAssert[
 				Run[
-					StringTemplate["chmod +x `` && ``"][ wlDeployCommand ]
+					StringTemplate["wolframscript -script ``"][ wlDeployCommand ]
 				] === 0,
 				"Backend build and deploy script failed"
 			]
@@ -158,7 +158,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		True
 		,(* OnError *)
 		Function[e,
-			log["[ERROR]: " <> ToString[e]];
+			log[WWE`ANSITools["Style", "[ERROR]: ", Red] <> ToString[e]];
 			e
 		]
 	]
