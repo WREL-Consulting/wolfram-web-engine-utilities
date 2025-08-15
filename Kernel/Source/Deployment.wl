@@ -17,11 +17,15 @@ DeployWebappFrontEnd[buildDir_, location_String : "", OptionsPattern[]] :=
 		With[{
 			deployLoc = FileNameJoin[{
 				OptionValue["WebappLocation"], location
-			}]
+			}],
+			printInfo = Print[
+				WWE`ANSITools["Style", "[DeployWebaapFrontEnd]: ", Gray]<>
+				##
+			]&
 		},
 		(* If location doesn't exist, create it *)
 		If[!DirectoryQ[deployLoc],
-			Print["\033[2m[DeployWebappFrontEnd]:\033[22m Creating directory:", deployLoc];
+			printInfo["Creating directory '", deployLoc, "'"];
 			Confirm[
 				CreateDirectory[deployLoc],
 				"Failed to create directory"
@@ -30,12 +34,11 @@ DeployWebappFrontEnd[buildDir_, location_String : "", OptionsPattern[]] :=
 
 		(* Delete any existing duplicate files *)
 		If[DirectoryQ[deployLoc],
-			Print["\033[2m[DeployWebappFrontEnd]:\033[22m Deleting existing deployment files at ", deployLoc];
-
+			printInfo["Deleting existing deployment files at ", deployLoc];
 			With[{ existingFile = FileNameJoin[{ deployLoc, # }] },
 				If[FileExistsQ[existingFile],
 					If[DirectoryQ[existingFile],
-						DeleteDirectory[#, DeleteContents->True]&,
+						DeleteDirectory[#, DeleteContents -> True]&,
 						DeleteFile
 					][existingFile]
 				]
@@ -98,9 +101,12 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				ConfirmAssert[cloneRes === 0, "Clone failed."];
 			,
 			"paclet",
-				localDir = PacletInstall[repositoryAssoc["name"],
-					"Site" -> repositoryAssoc["site"]
-				]["Location"];
+				PacletUninstall[ repositoryAssoc["name"] ];
+				localDir =
+					PacletInstall[repositoryAssoc["name"],
+						PacletSite -> repositoryAssoc["site"],
+						ForceVersionInstall -> True
+					]["Location"];
 			,
 			"sftp",
 				$Failed (* WIP *)
@@ -147,14 +153,16 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 			wlDeployCommand = deployWL <> init;
 			log["[EXEC]: " <> wlDeployCommand];
 			ConfirmAssert[
-				Run[ wlDeployCommand ] === 0,
+				Run[
+					StringTemplate["wolframscript -script ``"][ wlDeployCommand ]
+				] === 0,
 				"Backend build and deploy script failed"
 			]
 		];
 		True
 		,(* OnError *)
 		Function[e,
-			log["[ERROR]: " <> ToString[e]];
+			log[WWE`ANSITools["Style", "[ERROR]: ", Red] <> ToString[e]];
 			e
 		]
 	]

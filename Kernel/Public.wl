@@ -51,6 +51,7 @@ LogError::usage =
 		"/var/log/appName/functionName-error.log.";
 
 (* Aliases - For backwards compatibility *)
+deployExpression     = DeployExpression;
 deployBuildFolder    = DeployWebappFrontEnd;
 initiliseDatabase    = WebappDatabaseInitialize;
 makeDBConnection     = WebappDatabaseConnect;
