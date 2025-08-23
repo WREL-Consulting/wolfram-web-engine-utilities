@@ -100,13 +100,18 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				log["[OUT | git-clone]: " <> ToString[cloneRes]];
 				ConfirmAssert[cloneRes === 0, "Clone failed."];
 			,
-			"paclet",
+			"site:paclet",
 				PacletUninstall[ repositoryAssoc["name"] ];
 				localDir =
 					PacletInstall[repositoryAssoc["name"],
 						PacletSite -> repositoryAssoc["site"],
 						ForceVersionInstall -> True
 					]["Location"];
+			,
+			"url:paclet",
+				PacletUninstall[ repositoryAssoc["name"] ];
+				localDir =
+					PacletInstall[ repositoryAssoc["remote"] ]["Location"];
 			,
 			"sftp",
 				$Failed (* WIP *)
