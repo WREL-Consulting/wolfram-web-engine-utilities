@@ -95,9 +95,9 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 						localDir,
 						repositoryAssoc["branch"]
 				}];
-				log["[EXEC]: " <> cloneCommand];
+				log[WWE`ANSITools["Style", "[EXEC]: ", Blue] <> cloneCommand];
 				cloneRes = Run[cloneCommand];
-				log["[OUT | git-clone]: " <> ToString[cloneRes]];
+				log[WWE`ANSITools["Style", "[OUT | git-clone]: ", Magenta] <> ToString[cloneRes]];
 				ConfirmAssert[cloneRes === 0, "Clone failed."];
 			,
 			"site:paclet",
@@ -134,9 +134,9 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 					},
 					"&&"
 				];
-			log["[EXEC]: " <> buildCommand];
+			log[WWE`ANSITools["Style", "[EXEC]: ", Blue] <> buildCommand];
 			buildCode = Run[buildCommand];
-			log["[OUT | build:wwe]: " <> ToString[buildCode]];
+			log[WWE`ANSITools["Style", "[OUT | build:wwe]: ", Magenta] <> ToString[buildCode]];
 			ConfirmAssert[buildCode === 0, "Frontend build failed."];
 			buildLoc =
 				Cases[
@@ -159,11 +159,11 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		deployWL = getFileAtTopLevel["deploy.wwe.wls", localDir];
 		If[!FailureQ[deployWL],
 			wlDeployCommand = deployWL <> init;
-			log["[EXEC]: " <> wlDeployCommand];
+			log[WWE`ANSITools["Style", "[EXEC]: ", Blue] <> wlDeployCommand];
+			buildCode = Run["wolframscript -script " <> wlDeployCommand];
+			log[WWE`ANSITools["Style", "[OUT | build:wwe]: ", Magenta] <> ToString[buildCode]];
 			ConfirmAssert[
-				Run[
-					StringTemplate["wolframscript -script ``"][ wlDeployCommand ]
-				] === 0,
+				buildCode === 0,
 				"Backend build and deploy script failed"
 			]
 		];
