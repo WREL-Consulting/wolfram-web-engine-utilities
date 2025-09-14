@@ -122,7 +122,10 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		(* Build and deploy the frontend *)
 		packageJson = getFileAtTopLevel["package.json", localDir];
 		feLoc = DirectoryName[packageJson];
-		If[!FailureQ[packageJson],
+		If[ And[
+				!FailureQ[packageJson],
+				!MissingQ[Import[packageJson, "RawJSON"]["scripts"]]
+			],
 			buildCommand =
 				StringRiffle[{
 						"cd "<> feLoc,
@@ -133,7 +136,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				];
 			log["[EXEC]: " <> buildCommand];
 			buildCode = Run[buildCommand];
-			log["[OUT | build:wwe] " <> ToString[buildCode]];
+			log["[OUT | build:wwe]: " <> ToString[buildCode]];
 			ConfirmAssert[buildCode === 0, "Frontend build failed."];
 			buildLoc =
 				Cases[
