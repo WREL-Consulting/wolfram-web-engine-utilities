@@ -72,8 +72,7 @@ DeployWebappFrontEnd[buildDir_, location_String : "", OptionsPattern[]] :=
  * Return:       True | $Failed
  *)
 DeployWebappRepository // Options = {
-	"Initialize" -> False,
-	"FE" -> False
+	"Initialize" -> False
 };
 DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		cloneRes, cloneCommand, buildCommand, buildCode, feLoc, cloneLink,
@@ -82,8 +81,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		init = If[OptionValue["Initialize"],
 			" --init",
 			""
-		],
-		FE = OptionValue["FE"]
+		]
 	},
 	Enclose[
 		(* Clone in files *)
@@ -122,38 +120,36 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				$Failed
 		];
 		(* Build and deploy the frontend *)
-		If[FE,	
-			packageJson = getFileAtTopLevel["package.json", localDir];
-			feLoc = DirectoryName[packageJson];
-			If[!FailureQ[packageJson],
-				buildCommand =
-					StringRiffle[{
-							"cd "<> feLoc,
-							"bun install",
-							"bun build:wwe"
-						},
-						"&&"
-					];
-				log["[EXEC]: " <> buildCommand];
-				buildCode = Run[buildCommand];
-				log["[OUT | build:wwe] " <> ToString[buildCode]];
-				ConfirmAssert[buildCode === 0, "Frontend build failed."];
-				buildLoc =
-					Cases[
-						FileNames["build-wwe", feLoc, 5],
-						_String?(Not @* StringContainsQ["node_modules"])
-					];
-				ConfirmAssert[
-					Length[buildLoc] > 0,
-					"Could not find build-wwe folder"
+		packageJson = getFileAtTopLevel["package.json", localDir];
+		feLoc = DirectoryName[packageJson];
+		If[!FailureQ[packageJson],
+			buildCommand =
+				StringRiffle[{
+						"cd "<> feLoc,
+						"bun install",
+						"bun build:wwe"
+					},
+					"&&"
 				];
-				Confirm[
-					DeployWebappFrontEnd[
-						First[buildLoc],
-						repositoryAssoc["prefix"]
-					],
-					"Frontend deployment failed"
-				]
+			log["[EXEC]: " <> buildCommand];
+			buildCode = Run[buildCommand];
+			log["[OUT | build:wwe] " <> ToString[buildCode]];
+			ConfirmAssert[buildCode === 0, "Frontend build failed."];
+			buildLoc =
+				Cases[
+					FileNames["build-wwe", feLoc, 5],
+					_String?(Not @* StringContainsQ["node_modules"])
+				];
+			ConfirmAssert[
+				Length[buildLoc] > 0,
+				"Could not find build-wwe folder"
+			];
+			Confirm[
+				DeployWebappFrontEnd[
+					First[buildLoc],
+					repositoryAssoc["prefix"]
+				],
+				"Frontend deployment failed"
 			]
 		];
 		(* Build and deploy WL backend *)
