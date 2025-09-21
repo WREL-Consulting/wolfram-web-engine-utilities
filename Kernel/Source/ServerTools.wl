@@ -4,6 +4,7 @@ BeginPackage["WWE`FileScope`ServerTools`", {
 }];
 Begin["`Private`"];
 
+
 (* -------------------------------------------------------------------------- *)
 (* ::Section:: *)(* RestartKernelPool *)
 (* Description:  Restart all active kernels in the pool
@@ -103,19 +104,19 @@ AddWolframInitCode[initCode_, OptionsPattern[]] := Enclose @ Module[{
 ];
 
 (* -------------------------------------------------------------------------- *)
-(* ::Section:: *)(* DefineSupervisorCommand *)
-(* Description:  Defines a supervisor command
+(* ::Section:: *)(* AddSupervisorCommand *)
+(* Description:  Adds a supervisor command
  * Return:       True | False | $Failed
  *)
-DefineSupervisorCommand::noconf = "Could not find supervisord.conf file at /etc/supervisord.conf";
-DefineSupervisorCommand::exists = "Program `1` already exists in supervisord.conf file";
-DefineSupervisorCommand // Options = {
+AddSupervisorCommand::noconf = "Could not find supervisord.conf file at /etc/supervisord.conf";
+AddSupervisorCommand::exists = "Program `1` already exists in supervisord.conf file";
+AddSupervisorCommand // Options = {
 	"AutoStart" -> True,
 	"AutoRestart" -> True,
 	"StdErrLogFile" -> "/dev/stderr",
 	"StdOutLogFile" -> "/dev/stdout"
 };
-DefineSupervisorCommand[command_String, name_String, OptionsPattern[]] := Module[{
+AddSupervisorCommand[command_String, name_String, OptionsPattern[]] := Module[{
 		stream, rawFile
 	},
 
@@ -182,17 +183,17 @@ DefineSupervisorCommand[command_String, name_String, OptionsPattern[]] := Module
 ];
 
 (* -------------------------------------------------------------------------- *)
-(* ::Section:: *)(* DefineCronJob *)
-(* Description:  Defines a cron job in the crontab file
+(* ::Section:: *)(* AddCronJob *)
+(* Description:  Adds a cron job in the crontab file
  * Return:       True | False | $Failed
  *)
-DefineCronJob::exists = "Command `1` already exists in crontab file";
-DefineCronJob::noconf = "Could not find crontab file at `1`";
-DefineCronJob // Options = {
+AddCronJob::exists = "Command `1` already exists in crontab file";
+AddCronJob::noconf = "Could not find crontab file at `1`";
+AddCronJob // Options = {
 	"CrontabFile" -> "/etc/crontab",
 	"User" -> "root"
 };
-DefineCronJob[command_String, cronSpec_String?crontabSpecValidQ, OptionsPattern[]] :=
+AddCronJob[command_String, cronSpec_String?crontabSpecValidQ, OptionsPattern[]] :=
 	Module[
 		{
 			crontabFile = OptionValue["CrontabFile"],

@@ -1,5 +1,13 @@
 BeginPackage["WWE`"];
 
+DeployWebapps::usage =
+	"DeployWebapps[] " <>
+		"deploys all repositories in the webapps-manifest.m file.\n" <>
+	"Options: \n"<>
+		"\"Manifest\" -> Location to the webapps-manifest.m file.\n" <>
+		"\"LogLabel\" -> Label to print to stdout.\n" <>
+		"\"Initialize\" -> True will initialize flag to DeployWebappRepository.";
+
 RestartKernelPool::usage =
 	"RestartKernelPool[] " <>
 		"restarts the kernel pool by calling the KillAll.jsp endpoint.";
@@ -37,12 +45,12 @@ WebappDatabaseConnect::usage =
 	"WebappDatabaseConnect[dbName_ : \"\"] " <>
 		"creates a connection to the database `dbName`.";
 
-DefineSupervisorCommand::usage =
-	"DefineSupervisorCommand[command_String, name_String] "<>
+AddSupervisorCommand::usage =
+	"AddSupervisorCommand[command_String, name_String] "<>
 		"adds a program to the supervisord configuration file.";
 
-DefineCronJob::usage =
-	"DefineCronJob[command_String, cronSpec_String] " <>
+AddCronJob::usage =
+	"AddCronJob[command_String, cronSpec_String] " <>
 		"adds a command to the crontab file with the provided cronSpec.";
 
 LogError::usage =
@@ -55,9 +63,11 @@ deployExpression     = DeployExpression;
 deployBuildFolder    = DeployWebappFrontEnd;
 initiliseDatabase    = WebappDatabaseInitialize;
 makeDBConnection     = WebappDatabaseConnect;
-addSupervisorCommand = DefineSupervisorCommand;
+addSupervisorCommand = AddSupervisorCommand;
+DefineSupervisorCommand = AddSupervisorCommand;
 addInitCode          = AddWolframInitCode;
-addCrontabCommand    = DefineCronJob;
+addCrontabCommand    = AddCronJob;
+DefineCronJob        = AddCronJob;
 logError             = LogError;
 CommandLineParse     = ResourceFunction["CommandLineParse"];
 ANSITools            = ResourceFunction["ANSITools"];
