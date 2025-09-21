@@ -4,6 +4,67 @@ BeginPackage["WWE`FileScope`Deployment`", {
 }];
 Begin["`Private`"];
 
+(* :!CodeAnalysis::BeginBlock:: *)
+(* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
+
+(* -------------------------------------------------------------------------- *)
+(* ::Section:: *)(* RestartKernelPool *)
+(* Description:  Restart all active kernels in the pool
+ * Return:       _Success | _Failure
+ *)
+DeployWebapps // Options = {
+	"Manifest" -> "/deployment/webapps-manifest.m",
+	"LogLabel" -> "[DeployWebapps]: ",
+	"Initialize" -> False
+};
+DeployWebapps[OptionsPattern[]] := Module[{
+		repos,
+		init = OptionValue["Initialize"],
+
+		printInfo = Print[
+			ANSITools["Style", OptionValue["LogLabel"],
+				Gray
+			] <>
+			#
+		]&,
+		printSucc = Print[
+			ANSITools["Style", OptionValue["LogLabel"],
+				Gray
+			] <>
+			ANSITools["Style", #, Green]
+		]&,
+		printFail = Print[
+			ANSITools["Style", OptionValue["LogLabel"], Red] <>
+			ANSITools["Style", #, Red]
+		]&
+	},
+	Enclose[
+		printInfo[ "Importing repositories association..." ];
+		repos = Confirm @ Import[ OptionValue["Manifest"] ];
+
+		printInfo[ "Deploying repositories..." ];
+		Confirm[#, #["Information"]]& @ Map[
+			DeployWebappRepository[#, "Initialize" -> init]&,
+			repos
+		];
+
+		printInfo[ "Restarting kernel pool..." ];
+		RestartKernelPool[];
+
+		printSucc["Deployment successful"];
+		Success["Deployment successful", <|
+			"MessageTemplate" -> "Deployment successful"
+		|>]
+		,(* OnError *)
+		Function[e,
+			printFail[ "Deployment failed" ];
+			WriteString["stderr", e["Information"], "\n"];
+			Exit[1]
+		]
+	]
+];
+
+
 (* -------------------------------------------------------------------------- *)
 (* ::Section:: *)(* DeployWebappFrontEnd *)
 (* Description:  Deploys the webapp frontend to the specified location
@@ -176,6 +237,8 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 	]
 ];
 
+(* :!CodeAnalysis::EndBlock:: *)
+
 (* -------------------------------------------------------------------------- *)
 (* ::Section:: *)(* DeployExpression *)
 (* Description:  Deploys an expression to the Tomcat ROOT webapp directory
@@ -220,7 +283,7 @@ DeployExpression[expr_, location_String : Automatic, OptionsPattern[]] :=
 		ServiceDeployment[<|
 			"Name" -> "WolframWebEngine",
 			"Resource" -> deployment,
-			"URL" -> FileNameJoin[{"/",loc}]
+			"URL" -> FileNameJoin[{"/", loc}]
 		|>]
 	]
 ];
