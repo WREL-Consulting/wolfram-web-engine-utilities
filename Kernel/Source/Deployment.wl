@@ -100,7 +100,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 			],
 			Confirm @
 			DeployWebappFrontEnd[
-				First[buildLoc],
+				feLoc,
 				repositoryAssoc["prefix"]
 			]
 
@@ -182,13 +182,13 @@ DeployExpression[expr_, location_String : Automatic, OptionsPattern[]] :=
 DeployWebappFrontEnd // Options = {
 	"WebappLocation" -> "/usr/local/tomcat/webapps/ROOT"
 };
-DeployWebappFrontEnd[buildDir_, location_String : "", OptionsPattern[]] :=
+DeployWebappFrontEnd[feLoc_, location_String : "", OptionsPattern[]] :=
 	Enclose[
 		Block[{ buildCode, buildLoc,
 			log = WWE`LogError["WWE", "DeployWebappFrontEnd", Print[#];#]&,
 			buildCommand =
 				StringRiffle[{
-						"cd "<> location,
+						"cd "<> feLoc,
 						"bun install",
 						"bun build:wwe"
 					},
@@ -213,12 +213,14 @@ DeployWebappFrontEnd[buildDir_, location_String : "", OptionsPattern[]] :=
 		];
 		(* Find built files *)
 		ConfirmAssert[
-			buildLoc =
+			buildLoc = First[
 				Cases[
-					FileNames["build-wwe", location, 5],
+					FileNames["build-wwe", feLoc, 5],
 					_String?(Not @* StringContainsQ["node_modules"])
-				];
-			Length[buildLoc] > 0
+				],
+				None
+			];
+			StringQ[buildLoc]
 			,
 			"Could not find build-wwe folder"
 		];
@@ -245,18 +247,18 @@ DeployWebappFrontEnd[buildDir_, location_String : "", OptionsPattern[]] :=
 				FileNames[
 					loc: (StartOfString~~__~~EndOfString) /; (
 						(* Ignore directories *)
-						Not[ DirectoryQ @ FileNameJoin[{buildDir, loc}] ]
+						Not[ DirectoryQ @ FileNameJoin[{buildLoc, loc}] ]
 					),
-					buildDir,
+					buildLoc,
 					Infinity
 				],
-				buildDir
+				buildLoc
 			]
 		];
 		(* Copy the contents of the build folder to the deploy location *)
 		ConfirmAssert[
 			Run[
-				StringTemplate["cp -r `1`/* `2`"][buildDir, deployLoc]
+				StringTemplate["cp -r `1`/* `2`"][buildLoc, deployLoc]
 			] === 0,
 			"Failed to copy build files"
 		]
