@@ -78,7 +78,7 @@ WebappDatabaseConnect // Options = {
 	"Port" -> 3306,
 	"Username" -> "admin",
 	"Password" -> SystemCredential["db-pass"],
-	"UseConnectionPool" -> True,
+	"UseConnectionPool" -> False,
 	"BaseURL" -> "mariadb"
 };
 WebappDatabaseConnect[dbName_String : "", OptionsPattern[]]:= Enclose[
