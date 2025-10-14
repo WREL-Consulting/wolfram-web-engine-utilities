@@ -21,33 +21,50 @@ RestartKernelPool[] := Enclose[
 ];
 
 (* -------------------------------------------------------------------------- *)
-(* ::Section:: *)(* LogError *)
-(* Description:  Logs string into a log file
+(* ::Section:: *)(* Log *)
+(* Description:  Logs meassage into a log file
  * Return:       Null
  *)
-LogError // Options = {
+Log // Options = {
 	"LogDirectory" -> "/var/log/"
 };
-LogError[appName_String, functionName_String, message_String, OptionsPattern[]] :=
+Log[lvl_String, appName_String, functionName_String, message_String, OptionsPattern[]] :=
 	Module[{
-			errStr,
-			dir = FileNameJoin[{
-				OptionValue["LogDirectory"], camelToSnakeCase[appName]
-			}],
-			fileName = ToLowerCase[
-				StringTrim @ camelToSnakeCase @ functionName
-			] <> "-error.log"
+			errStr, logMsg, consoleMsg, content,
+			dir =
+				FileNameJoin[{
+					OptionValue["LogDirectory"],
+					camelToSnakeCase[appName]
+				}],
+			fileName =
+				FileNameJoin[{
+					ToLowerCase[
+						StringTrim @ camelToSnakeCase[functionName]
+					],
+					DateString["ISODate"] <> ".log"
+				}]
 		},
-
+		content = <|
+			"timestamp" -> DateString["Time"],
+			"appName"   -> appName,
+			"funcName"  -> functionName,
+			"lvl"       -> lvl,
+			"body"      -> message
+		|>;
+		consoleMsg = StringTemplate[
+			ANSITools["Style", "[`lvl`][`appName` | `funcName`]:", Gray]<>
+			"`body`"
+		][content];
+		logMsg = StringTemplate["`timestamp` - [`lvl`]: `body`"][content];
 		If[!DirectoryQ[dir],
 			CreateDirectory[dir]
 		];
-
 		WithCleanup[
 			errStr = OpenAppend @ FileNameJoin[{dir, fileName}],
-			WriteString[ errStr, message, "\n" ],
+			WriteString[ errStr, logMsg, "\n" ],
 			Close[ errStr ]
-		]
+		];
+		Print[consoleMsg];
 	];
 
 (* -------------------------------------------------------------------------- *)
