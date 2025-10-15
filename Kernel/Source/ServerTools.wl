@@ -26,7 +26,9 @@ RestartKernelPool[] := Enclose[
  * Return:       Null
  *)
 Logger // Options = {
-	"LogDirectory" -> "/var/log/"
+	"LogDirectory" -> "/var/log/",
+	"LogToFile" -> True,
+	"LogToStdout" -> True
 };
 Logger[lvl_String, appName_String, functionName_String, message_String, OptionsPattern[]] :=
 	Module[{
@@ -34,15 +36,12 @@ Logger[lvl_String, appName_String, functionName_String, message_String, OptionsP
 			dir =
 				FileNameJoin[{
 					OptionValue["LogDirectory"],
-					camelToSnakeCase[appName]
-				}],
-			fileName =
-				FileNameJoin[{
+					camelToSnakeCase[appName],
 					ToLowerCase[
 						StringTrim @ camelToSnakeCase[functionName]
-					],
-					DateString["ISODate"] <> ".log"
-				}]
+					]
+				}],
+			fileName = DateString["ISODate"] <> ".log"
 		},
 		content = <|
 			"timestamp" -> DateString["Time"],
@@ -51,20 +50,22 @@ Logger[lvl_String, appName_String, functionName_String, message_String, OptionsP
 			"lvl"       -> lvl,
 			"body"      -> message
 		|>;
-		consoleMsg = StringTemplate[
-			ANSITools["Style", "[`lvl`][`appName` | `funcName`]:", Gray]<>
-			"`body`"
-		][content];
-		logMsg = StringTemplate["`timestamp` - [`lvl`]: `body`"][content];
-		If[!DirectoryQ[dir],
-			CreateDirectory[dir]
+		If[ OptionValue["LogToFile"],
+			If[ Not @ DirectoryQ[dir], CreateDirectory[dir]];
+			consoleMsg = StringTemplate[
+				ANSITools["Style", "[`lvl`][`appName` | `funcName`]:", Gray]<>
+				"`body`"
+			][content];
+			WithCleanup[
+				errStr = OpenAppend @ FileNameJoin[{dir, fileName}],
+				WriteString[ errStr, logMsg, "\n" ],
+				Close[ errStr ]
+			]
 		];
-		WithCleanup[
-			errStr = OpenAppend @ FileNameJoin[{dir, fileName}],
-			WriteString[ errStr, logMsg, "\n" ],
-			Close[ errStr ]
+		If[ OptionValue["LogToStdout"],
+			logMsg = StringTemplate["`timestamp` - [`lvl`]: `body`"][content];
+			Print[consoleMsg]
 		];
-		Print[consoleMsg];
 	];
 
 (* -------------------------------------------------------------------------- *)
