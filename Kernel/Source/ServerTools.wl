@@ -21,7 +21,7 @@ RestartKernelPool[] := Enclose[
 ];
 
 (* -------------------------------------------------------------------------- *)
-(* ::Section:: *)(* Log *)
+(* ::Section:: *)(* Logger *)
 (* Description:  Logs meassage into a log file
  * Return:       Null
  *)
@@ -30,7 +30,7 @@ Logger // Options = {
 	"LogToFile" -> True,
 	"LogToStdout" -> True
 };
-Log[lvl_String, appName_String, functionName_String, message_String, OptionsPattern[]] :=
+Logger[lvl_String, appName_String, functionName_String, message_String, OptionsPattern[]] :=
 	Module[{
 			errStr, logMsg, consoleMsg, content,
 			dir =

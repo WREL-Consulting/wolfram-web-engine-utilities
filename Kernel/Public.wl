@@ -53,8 +53,8 @@ AddCronJob::usage =
 	"AddCronJob[command_String, cronSpec_String] " <>
 		"adds a command to the crontab file with the provided cronSpec.";
 
-Log::usage =
-	"Log[level_String, appName_String, functionName_String, message_String] " <>
+Logger::usage =
+	"Logger[level_String, appName_String, functionName_String, message_String] " <>
 		"logs an event message to the log file "<>
 		"/var/log/appName/functionName-error.log.";
 
@@ -69,10 +69,10 @@ addInitCode          = AddWolframInitCode;
 addCrontabCommand    = AddCronJob;
 DefineCronJob        = AddCronJob;
 logError             = Function[
-	Print["logError is obsolete. Use WWE`Log instead."]
+	Print["logError is obsolete. Use WWE`Logger instead."]
 ];
 LogError             = Function[
-	Print["LogError is obsolete. Use WWE`Log instead."]
+	Print["LogError is obsolete. Use WWE`Logger instead."]
 ];
 CommandLineParse     = Function[
 	Print["CommandLineParse is obsolete. Use WWE`CLITools instead."];
