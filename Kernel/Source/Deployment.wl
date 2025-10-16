@@ -78,8 +78,8 @@ DeployWebappRepository // Options = {
 	"DeployBackend" -> True
 };
 DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
-		deployWL, buildLoc, packageJson, localDir, feLoc,
-		log = WWE`LogError["WWE", "DeployWebappRepository", Print[#];#]&,
+		deployWL, packageJson, localDir, feLoc,
+		log = WWE`Logger["INFO", "WWE", "DeployWebappRepository", #]&,
 		init = If[OptionValue["Initialize"],
 			" --init",
 			""
@@ -185,7 +185,7 @@ DeployWebappFrontEnd // Options = {
 DeployWebappFrontEnd[feLoc_, location_String : "", OptionsPattern[]] :=
 	Enclose[
 		Block[{ buildCode, buildLoc,
-			log = WWE`LogError["WWE", "DeployWebappFrontEnd", Print[#];#]&,
+			log = WWE`Logger["IFNO", "WWE", "DeployWebappFrontEnd", #]&,
 			buildCommand =
 				StringRiffle[{
 						"cd "<> feLoc,
@@ -277,7 +277,7 @@ DeployWebappBackend // Options = {
 DeployWebappBackend[deployScriptLoc_String, OptionsPattern[]] := Module[{
 		buildCode, wlDeployCommand,
 		init = OptionValue["Initialize"],
-		log = WWE`LogError["WWE", "DeployWebappBackend", Print[#];#]&
+		log = WWE`Logger["INFO", "WWE", "DeployWebappBackend", #]&
 	},
 	Enclose[
 		wlDeployCommand = deployScriptLoc <> init;
@@ -302,7 +302,7 @@ CloneWebappRepository // Options = {
 
 };
 CloneWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
-		log = WWE`LogError["WWE", "CloneWebappRepository", Print[#];#]&,
+		log = WWE`Logger["INFO", "WWE", "CloneWebappRepository", #]&,
 		cloneLink, localDir,
 		cloneCommand, cloneRes
 	},
