@@ -284,6 +284,8 @@ CloneWebappRepository // Options = {
 };
 CloneWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		log = WWE`Logger["INFO", "WWE", "CloneWebappRepository", #]&
+		cloneLink, localDir,
+		cloneCommand, cloneRes
 	},
 	Enclose[
 		Switch[repositoryAssoc["type"],

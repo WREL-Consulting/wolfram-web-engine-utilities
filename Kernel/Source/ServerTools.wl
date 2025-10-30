@@ -21,7 +21,7 @@ RestartKernelPool[] := Enclose[
 ];
 
 (* -------------------------------------------------------------------------- *)
-(* ::Section:: *)(* Log *)
+(* ::Section:: *)(* Logger *)
 (* Description:  Logs meassage into a log file
  * Return:       _Success
  *)
