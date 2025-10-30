@@ -9,6 +9,8 @@ Begin["`Private`"];
 (* Description:  Deploys webapps defined in a WWE webapp manifest file
  * Return:       _Success | _Failure
  *)
+(* :!CodeAnalysis::BeginBlock:: *)
+(* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
 DeployWebapps // Options = {
 	"Manifest" -> "/deployment/webapps-manifest.m",
 	"LogLabel" -> "[DeployWebapps]: ",
@@ -19,22 +21,9 @@ DeployWebapps // Options = {
 DeployWebapps[OptionsPattern[]] := Module[{
 		repos,
 		init = OptionValue["Initialize"],
-		printInfo = Print[
-			ANSITools["Style", OptionValue["LogLabel"],
-				Gray
-			] <>
-			#
-		]&,
-		printSucc = Print[
-			ANSITools["Style", OptionValue["LogLabel"],
-				Gray
-			] <>
-			ANSITools["Style", #, Green]
-		]&,
-		printFail = Print[
-			ANSITools["Style", OptionValue["LogLabel"], Red] <>
-			ANSITools["Style", #, Red]
-		]&
+		printInfo = WWE`Logger["INFO", "WWE", "DeployWebapps", #]&,
+		printSucc = WWE`Logger["SUCC", "WWE", "DeployWebapps", #]&,
+		printFail = WWE`Logger["FAIL", "WWE", "DeployWebapps", #]&
 	},
 	Enclose[
 		printInfo[ "Importing repositories association..." ];
@@ -65,6 +54,7 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		]
 	]
 ];
+(* :!CodeAnalysis::EndBlock:: *)
 
 
 (* -------------------------------------------------------------------------- *)
@@ -79,7 +69,6 @@ DeployWebappRepository // Options = {
 };
 DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		deployWL, packageJson, localDir, feLoc,
-		log = WWE`Logger["ERROR", "WWE", "DeployWebappRepository", #]&,
 		init = If[OptionValue["Initialize"],
 			" --init",
 			""
@@ -117,7 +106,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		Success["repository-deploy-success", repositoryAssoc]
 		,(* OnError *)
 		Function[e,
-			log[WWE`ANSITools["Style", "[ERROR]: ", Red] <> ToString[e]];
+			WWE`Logger["FAIL", "WWE", "DeployWebappRepository", ToString[e]];
 			e
 		]
 	]
@@ -185,7 +174,7 @@ DeployWebappFrontEnd // Options = {
 DeployWebappFrontEnd[feLoc_, location_String : "", OptionsPattern[]] :=
 	Enclose[
 		Block[{ buildCode, buildLoc,
-			log = WWE`Logger["ERROR", "WWE", "DeployWebappFrontEnd", Print[#];#]&,
+			log = WWE`Logger["IFNO", "WWE", "DeployWebappFrontEnd", #]&,
 			buildCommand =
 				StringRiffle[{
 						"cd "<> feLoc,
@@ -196,17 +185,13 @@ DeployWebappFrontEnd[feLoc_, location_String : "", OptionsPattern[]] :=
 				],
 			deployLoc = FileNameJoin[{
 				OptionValue["WebappLocation"], location
-			}],
-			printInfo = Print[
-				WWE`ANSITools["Style", "[DeployWebaapFrontEnd]: ", Gray]<>
-				##
-			]&
+			}]
 		},
 		(* Run build command *)
 		ConfirmAssert[
-			log[WWE`ANSITools["Style", "[EXEC]: ", Blue] <> buildCommand];
+			WWE`Logger["EXEC", "WWE", "DeployWebappFrontend", buildCommand];
 			buildCode = Run[buildCommand];
-			log[WWE`ANSITools["Style", "[OUT | build:wwe]: ", Magenta] <> ToString[buildCode]];
+			WWE`Logger["OUT", "WWE", "DeployWebappFrontend", ToString[buildCode]];
 			buildCode === 0
 			,
 			"Frontend build failed."
@@ -227,14 +212,14 @@ DeployWebappFrontEnd[feLoc_, location_String : "", OptionsPattern[]] :=
 		(* If deploy location doesn't exist, create it *)
 		If[Not @ DirectoryQ[deployLoc],
 			Confirm[
-				printInfo["Creating directory '", deployLoc, "'"];
+				log["Creating directory '", deployLoc, "'"];
 				CreateDirectory[deployLoc],
 				"Failed to create directory"
 			]
 		];
 		(* Delete any existing duplicate files *)
 		If[DirectoryQ[deployLoc],
-			printInfo["Deleting existing deployment files at ", deployLoc];
+			log["Deleting existing deployment files at ", deployLoc];
 			With[{ existingFile = FileNameJoin[{ deployLoc, # }] },
 				If[FileExistsQ[existingFile],
 					If[DirectoryQ[existingFile],
@@ -245,7 +230,7 @@ DeployWebappFrontEnd[feLoc_, location_String : "", OptionsPattern[]] :=
 			]& /@ StringDelete[
 				(* Select all file names in the build folder *)
 				FileNames[
-					loc: (StartOfString~~__~~EndOfString) /; (
+					loc: (StartOfString ~~ __ ~~ EndOfString) /; (
 						(* Ignore directories *)
 						Not[ DirectoryQ @ FileNameJoin[{buildLoc, loc}] ]
 					),
@@ -276,15 +261,14 @@ DeployWebappBackend // Options = {
 };
 DeployWebappBackend[deployScriptLoc_String, OptionsPattern[]] := Module[{
 		buildCode, wlDeployCommand,
-		init = OptionValue["Initialize"],
-		log = WWE`Logger["ERROR", "WWE", "DeployWebappBackend", Print[#];#]&
+		init = OptionValue["Initialize"]
 	},
 	Enclose[
 		wlDeployCommand = deployScriptLoc <> init;
-		log[WWE`ANSITools["Style", "[EXEC]: ", Blue] <> wlDeployCommand];
+		WWE`Logger["EXEC", "WWE", "DeployWebappBackend", wlDeployCommand];
 		(* Execute through wolframscript to avoid permission issues *)
 		buildCode = Run["wolframscript -script " <> wlDeployCommand];
-		log[WWE`ANSITools["Style", "[OUT | build:wwe]: ", Magenta] <> ToString[buildCode]];
+		WWE`Logger["OUT", "WWE", "DeployWebappBackend", ToString[buildCode]];
 		ConfirmAssert[
 			buildCode === 0,
 			"Backend build and deploy script failed"
@@ -302,49 +286,100 @@ CloneWebappRepository // Options = {
 
 };
 CloneWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
-		log = WWE`Logger["ERROR", "WWE", "CloneWebappRepository", Print[#];#]&,
-		cloneLink, localDir,
-		cloneCommand, cloneRes
+		log = WWE`Logger["INFO", "WWE", "CloneWebappRepository", #]&
 	},
 	Enclose[
 		Switch[repositoryAssoc["type"],
 			"git",
-				cloneLink = repositoryAssoc["remote"];
-				localDir = repositoryAssoc["local"];
-				cloneCommand = StringRiffle[{
-					"/scripts/git-clone",
-						cloneLink,
-						localDir,
-						repositoryAssoc["branch"]
-				}];
-				log[WWE`ANSITools["Style", "[EXEC]: ", Blue] <> cloneCommand];
-				cloneRes = Run[cloneCommand];
-				log[WWE`ANSITools["Style", "[OUT | git-clone]: ", Magenta] <> ToString[cloneRes]];
-				ConfirmAssert[cloneRes === 0, "Clone failed."];
+				log[
+					"Cloning git repository '" <>
+					repositoryAssoc["remote"] <>
+					"' to '" <>
+					repositoryAssoc["local"] <>
+					"'"
+				];
+				gitClone[
+					repositoryAssoc["remote"],
+					repositoryAssoc["local"],
+					repositoryAssoc["branch"]
+				]
 			,
 			"site:paclet",
-				PacletUninstall[ repositoryAssoc["name"] ];
-				localDir =
-					PacletInstall[repositoryAssoc["name"],
-						PacletSite -> repositoryAssoc["site"],
-						ForceVersionInstall -> True
-					]["Location"];
+				log[
+					"Cloning paclet '" <>
+					repositoryAssoc["name"] <>
+					"' from paclet site '" <>
+					repositoryAssoc["site"] <>
+					"'"
+				];
+				siteClone[
+					repositoryAssoc["name"],
+					repositoryAssoc["site"]
+				]
 			,
 			"url:paclet",
-				PacletUninstall[ repositoryAssoc["name"] ];
-				localDir =
-					PacletInstall[ repositoryAssoc["remote"] ]["Location"];
+				log[
+					"Cloning paclet '" <>
+					repositoryAssoc["name"] <>
+					"' from URL '" <>
+					repositoryAssoc["remote"] <>
+					"'"
+				];
+				pacletClone[
+					repositoryAssoc["name"],
+					repositoryAssoc["remote"]
+				]
 			,
 			"sftp",
 				$Failed (* WIP *)
 			,
 			_,
 				$Failed
-		];
-		localDir
+		]
 	]
 ];
 
+pacletClone[name_String, remote_String] :=
+	Enclose[
+		Quiet[
+			PacletUninstall[ name ],
+			{ PacletUninstall::notfound }
+		];
+		PacletInstall[
+			Replace[remote,
+				s_String?(StringStartsQ["cloudobject://"]) :>
+					CloudObject[s // StringDelete[StartOfString ~~ "cloudobject://"]]
+			]
+		]["Location"]
+	];
+
+siteClone[name_String, site_String] :=
+	Enclose[
+		PacletUninstall[ name ];
+		PacletInstall[name,
+			PacletSite -> site,
+			ForceVersionInstall -> True
+		]["Location"]
+	];
+
+gitClone[link_String, localDir_String, branch_String] :=
+	Block[{
+			cloneRes,
+			cloneCommand = StringRiffle[{
+				"/scripts/git-clone",
+					link,
+					localDir,
+					branch
+			}]
+		},
+		Enclose[
+			WWE`Logger["EXEC", "WWE", "gitClone", cloneCommand];
+			cloneRes = Run[cloneCommand];
+			WWE`Logger["OUT", "WWE", "gitClone", ToString[cloneRes]];
+			ConfirmAssert[cloneRes === 0, "Clone failed."];
+			localDir
+		]
+	];
 
 End[];
 EndPackage[];
