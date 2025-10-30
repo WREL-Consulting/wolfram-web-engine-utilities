@@ -23,39 +23,53 @@ RestartKernelPool[] := Enclose[
 (* -------------------------------------------------------------------------- *)
 (* ::Section:: *)(* Log *)
 (* Description:  Logs meassage into a log file
- * Return:       Null
+ * Return:       _Success
  *)
 Logger // Options = {
 	"LogDirectory" -> "/var/log/",
 	"LogToFile" -> True,
-	"LogToStdout" -> True
+	"LogToStdout" -> True,
+	"LogLevelStyles" -> {
+		"EXEC"  -> Blue,
+		"ERROR" -> Red,
+		"FAIL"  -> Red,
+		"SUCC"  -> Green,
+		"WARN"  -> Yellow,
+		"OUT"   -> Magenta
+	}
 };
-Log[lvl_String, appName_String, functionName_String, message_String, OptionsPattern[]] :=
+Logger[lvl_String, appName_String, functionName_String, message_String, OptionsPattern[]] :=
 	Module[{
-			errStr, logMsg, consoleMsg, content,
+			errStr, logMsg, consoleMsg, content, styledLevel,
 			dir =
 				FileNameJoin[{
 					OptionValue["LogDirectory"],
-					camelToSnakeCase[appName],
-					ToLowerCase[
-						StringTrim @ camelToSnakeCase[functionName]
-					]
+					ResourceFunction["StringCaseConvert"][appName],
+					ResourceFunction["StringCaseConvert"][functionName]
 				}],
 			fileName = DateString["ISODate"] <> ".log"
 		},
 		content = <|
-			"timestamp" -> DateString["Time"],
-			"appName"   -> appName,
-			"funcName"  -> functionName,
-			"lvl"       -> lvl,
-			"body"      -> message
+			"Timestamp" -> DateString["Time"],
+			"AppName"   -> appName,
+			"FunctionName"  -> functionName,
+			"Level"       -> lvl,
+			"Body"      -> message
 		|>;
+		styledLevel = ANSITools["Style",
+			"[`Level`]",
+			Replace[lvl,
+				Join[
+					OptionValue["LogLevelStyles"],
+					{
+						_String :> Gray
+					}
+				]
+			]
+		];
 		If[ OptionValue["LogToFile"],
 			If[ Not @ DirectoryQ[dir], CreateDirectory[dir]];
-			consoleMsg = StringTemplate[
-				ANSITools["Style", "[`lvl`][`appName` | `funcName`]:", Gray]<>
-				"`body`"
-			][content];
+			logMsg = StringTemplate["`Timestamp` - "<>styledLevel<>": `Body`"][content];
 			WithCleanup[
 				errStr = OpenAppend @ FileNameJoin[{dir, fileName}],
 				WriteString[ errStr, logMsg, "\n" ],
@@ -63,9 +77,16 @@ Log[lvl_String, appName_String, functionName_String, message_String, OptionsPatt
 			]
 		];
 		If[ OptionValue["LogToStdout"],
-			logMsg = StringTemplate["`timestamp` - [`lvl`]: `body`"][content];
-			Print[consoleMsg]
+			consoleMsg = StringTemplate[
+				styledLevel <>
+				ANSITools["Style", "[`AppName` | `FunctionName`]:", Gray] <>
+				"`Body`"
+			][content];
+			WriteString[$StandardOutputStream, consoleMsg <> "\n"]
 		];
+		Success["log-success",
+			content
+		]
 	];
 
 (* -------------------------------------------------------------------------- *)
@@ -145,13 +166,13 @@ AddSupervisorCommand[command_String, name_String, OptionsPattern[]] := Module[{
 				Import["/etc/supervisord.conf", "String"],
 				WhitespaceCharacter
 			],
-			Message[DefineSupervisorCommand::noconf];
+			Message[AddSupervisorCommand::noconf];
 			Return[$Failed]
 		];
 
 		(* Check if program already exists in supervisord.conf file *)
 		If[StringContainsQ[rawFile, StringTemplate["[program:``]"][name] ],
-			Message[DefineSupervisorCommand::exists, name];
+			Message[AddSupervisorCommand::exists, name];
 			Return[False]
 		];
 
@@ -221,7 +242,7 @@ AddCronJob[command_String, cronSpec_String?crontabSpecValidQ, OptionsPattern[]] 
 		res = Enclose[
 
 			If[!FileExistsQ[crontabFile],
-				Message[DefineCronJob::noconf, crontabFile];
+				Message[AddCronJob::noconf, crontabFile];
 				Return[$Failed]
 			];
 
@@ -230,7 +251,7 @@ AddCronJob[command_String, cronSpec_String?crontabSpecValidQ, OptionsPattern[]] 
 			] // StringDelete[WhitespaceCharacter];
 
 			If[StringContainsQ[existingCrontab, StringDelete[command, WhitespaceCharacter]],
-				Message[DefineCronJob::exists, command];
+				Message[AddCronJob::exists, command];
 				Return[False]
 			];
 

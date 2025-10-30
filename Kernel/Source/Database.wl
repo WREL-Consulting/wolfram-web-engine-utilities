@@ -30,7 +30,7 @@ WebappDatabaseInitialize[sqlFile_String, OptionsPattern[]]:= Enclose[
 
 		WithCleanup[
 			con = Confirm[
-					OpenSQLConnection[
+				OpenSQLConnection[
 					JDBC["MySQL(Connector/J)",
 						StringTemplate["`url`:`port`"][
 						<|
