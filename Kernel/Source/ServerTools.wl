@@ -106,9 +106,13 @@ AddWolframInitCode[initCode_, OptionsPattern[]] := Enclose @ Module[{
 		stream,
 		initFileDir = OptionValue["InitFile"],
 		initFileStr,
-		codeStr = ToString[Hold[initCode], FormatType->InputForm] // StringReplace[
-			StartOfString~~"Hold["~~code:___~~"]"~~EndOfString :> code<>";"
-		]
+		codeStr =
+			ToString[Hold[initCode], FormatType->InputForm] //
+			StringReplace[
+				StartOfString~~"Hold["~~code:___~~"]"~~EndOfString :> code<>";"
+			] // StringReplace[
+				"; " -> ";\n"
+			]
 	},
 
 	(* Check that the init file exists *)
