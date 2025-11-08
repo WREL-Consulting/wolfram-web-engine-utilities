@@ -87,7 +87,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				]
 			];
 			If[ And[
-					!FailureQ[packageJson],
+					StringQ[packageJson],
 					!MissingQ[Import[packageJson, "RawJSON"]["scripts"]]
 				],
 				Confirm @
@@ -102,7 +102,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		(* Build and deploy WL backend *)
 		If[ OptionValue["DeployBackend"],
 			deployWL = getFileAtTopLevel["deploy.wwe.wls", localDir];
-			If[ !FailureQ[deployWL],
+			If[ StringQ[deployWL],
 				Confirm @
 				DeployWebappBackend[deployWL, "Initialize" -> init],
 				WWE`Logger["WARN", "WWE", "DeployWebappRepository",

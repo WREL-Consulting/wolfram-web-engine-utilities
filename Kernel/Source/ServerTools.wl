@@ -44,17 +44,17 @@ Logger[lvl_String, appName_String, functionName_String, message_String, OptionsP
 			dir =
 				FileNameJoin[{
 					OptionValue["LogDirectory"],
-					ResourceFunction["StringCaseConvert"][appName],
-					ResourceFunction["StringCaseConvert"][functionName]
+						appName,
+						functionName
 				}],
 			fileName = DateString["ISODate"] <> ".log"
 		},
 		content = <|
-			"Timestamp" -> DateString["Time"],
-			"AppName"   -> appName,
-			"FunctionName"  -> functionName,
-			"Level"       -> lvl,
-			"Body"      -> message
+			"Timestamp"      -> DateString["Time"],
+			"AppName"        -> appName,
+			"FunctionName"   -> functionName,
+			"Level"          -> lvl,
+			"Body"           -> message
 		|>;
 		styledLevel = ANSITools["Style",
 			"[`Level`]",
