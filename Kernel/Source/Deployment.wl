@@ -78,32 +78,37 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		];
 
 		(* Build and deploy the frontend *)
-		packageJson = getFileAtTopLevel["package.json", localDir];
-		feLoc = If[ StringQ[packageJson],
-			DirectoryName[packageJson],
-			WWE`Logger["WARN", "WWE", "DeployWebappRepository", "No package.json"]
-		];
-		If[ And[
-				!FailureQ[packageJson],
-				!MissingQ[Import[packageJson, "RawJSON"]["scripts"]],
-				OptionValue["DeployFrontend"]
-			],
-			Confirm @
-			DeployWebappFrontEnd[
-				feLoc,
-				repositoryAssoc["prefix"]
-			]
+		If[ OptionValue["DeployFrontend"],
+			packageJson = getFileAtTopLevel["package.json", localDir];
+			feLoc = If[ StringQ[packageJson],
+				DirectoryName[packageJson],
+				WWE`Logger["WARN", "WWE", "DeployWebappRepository",
+					"No package.json"
+				]
+			];
+			If[ And[
+					!FailureQ[packageJson],
+					!MissingQ[Import[packageJson, "RawJSON"]["scripts"]]
+				],
+				Confirm @
+				DeployWebappFrontEnd[
+					feLoc,
+					repositoryAssoc["prefix"]
+				]
 
+			]
 		];
 
 		(* Build and deploy WL backend *)
-		deployWL = getFileAtTopLevel["deploy.wwe.wls", localDir];
-		If[ And[
-				!FailureQ[deployWL],
-				OptionValue["DeployBackend"]
-			],
-			Confirm @
-			DeployWebappBackend[deployWL, "Initialize" -> init]
+		If[ OptionValue["DeployBackend"],
+			deployWL = getFileAtTopLevel["deploy.wwe.wls", localDir];
+			If[ !FailureQ[deployWL],
+				Confirm @
+				DeployWebappBackend[deployWL, "Initialize" -> init],
+				WWE`Logger["WARN", "WWE", "DeployWebappRepository",
+					"No deploy.wwe.wls"
+				]
+			]
 		];
 		Success["repository-deploy-success", repositoryAssoc]
 		,(* OnError *)
