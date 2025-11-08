@@ -73,12 +73,16 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 	},
 	Enclose[
 		(* Clone in files *)
-		localDir = Confirm[
-			CloneWebappRepository[repositoryAssoc]
+		Confirm[
+			localDir = CloneWebappRepository[repositoryAssoc]
 		];
+
 		(* Build and deploy the frontend *)
 		packageJson = getFileAtTopLevel["package.json", localDir];
-		feLoc = DirectoryName[packageJson];
+		feLoc = If[ StringQ[packageJson],
+			DirectoryName[packageJson],
+			WWE`Logger["WARN", "WWE", "DeployWebappRepository", "No package.json"]
+		];
 		If[ And[
 				!FailureQ[packageJson],
 				!MissingQ[Import[packageJson, "RawJSON"]["scripts"]],
@@ -91,6 +95,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 			]
 
 		];
+
 		(* Build and deploy WL backend *)
 		deployWL = getFileAtTopLevel["deploy.wwe.wls", localDir];
 		If[ And[
@@ -284,76 +289,75 @@ CloneWebappRepository // Options = {
 };
 CloneWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		log = WWE`Logger["INFO", "WWE", "CloneWebappRepository", #]&
-		cloneLink, localDir,
-		cloneCommand, cloneRes
 	},
-	Enclose[
-		Switch[repositoryAssoc["type"],
-			"git",
-				log[
-					"Cloning git repository '" <>
-					repositoryAssoc["remote"] <>
-					"' to '" <>
-					repositoryAssoc["local"] <>
-					"'"
-				];
-				gitClone[
-					repositoryAssoc["remote"],
-					repositoryAssoc["local"],
-					repositoryAssoc["branch"]
-				]
-			,
-			"site:paclet",
-				log[
-					"Cloning paclet '" <>
-					repositoryAssoc["name"] <>
-					"' from paclet site '" <>
-					repositoryAssoc["site"] <>
-					"'"
-				];
-				siteClone[
-					repositoryAssoc["name"],
-					repositoryAssoc["site"]
-				]
-			,
-			"url:paclet",
-				log[
-					"Cloning paclet '" <>
-					repositoryAssoc["name"] <>
-					"' from URL '" <>
-					repositoryAssoc["remote"] <>
-					"'"
-				];
-			,
-			"sftp",
-				$Failed (* WIP *)
-			,
-			_,
-				$Failed
-		]
+	Switch[repositoryAssoc["type"],
+		"git",
+			log[
+				"Cloning git repository '" <>
+				repositoryAssoc["remote"] <>
+				"' to '" <>
+				repositoryAssoc["local"] <>
+				"'"
+			];
+			gitClone[
+				repositoryAssoc["remote"],
+				repositoryAssoc["local"],
+				repositoryAssoc["branch"]
+			]
+		,
+		"site:paclet",
+			log[
+				"Cloning paclet '" <>
+				repositoryAssoc["name"] <>
+				"' from paclet site '" <>
+				repositoryAssoc["site"] <>
+				"'"
+			];
+			siteClone[
+				repositoryAssoc["name"],
+				repositoryAssoc["site"]
+			]
+		,
+		"url:paclet",
+			log[
+				"Cloning paclet '" <>
+				repositoryAssoc["name"] <>
+				"' from URL '" <>
+				repositoryAssoc["remote"] <>
+				"'"
+			];
+		,
+		"sftp",
+			$Failed (* WIP *)
+		,
+		_,
+			$Failed
 	]
 ];
 
 pacletClone[name_String, remote_String] :=
 	Enclose[
-		Quiet[
-			PacletUninstall[ name ],
-			{ PacletUninstall::notfound }
-		];
-		PacletInstall[
-			Replace[remote,
-				s_String?(StringStartsQ["cloudobject://"]) :>
-					CloudObject[s // StringDelete[StartOfString ~~ "cloudobject://"]]
-			]
+		Quiet @ PacletUninstall[ name ];
+		Confirm[
+			PacletInstall[
+				Replace[remote,
+					s_String?(StringStartsQ["cloudobject://"]) :>
+						CloudObject[s // StringDelete[StartOfString ~~ "cloudobject://"]]
+				]
+			],
+			"Failed to install paclet " <> name <> " remote " <> remote
 		]["Location"]
 	];
 
 siteClone[name_String, site_String] :=
 	Enclose[
-		PacletUninstall[ name ];
-		PacletInstall[name,
-			PacletSite -> site,
-			ForceVersionInstall -> True
+		Quiet @ PacletUninstall[ name ];
+		Confirm[
+			PacletInstall[name,
+				PacletSite -> site,
+				ForceVersionInstall -> True
+			],
+			"Failed to install paclet " <> name <> " from site " <> site
 		]["Location"]
 	];
 
