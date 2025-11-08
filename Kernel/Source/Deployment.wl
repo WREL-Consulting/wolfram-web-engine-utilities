@@ -330,7 +330,7 @@ CloneWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				"' from URL '" <>
 				repositoryAssoc["remote"] <>
 				"'"
-			];
+			]
 		,
 		"sftp",
 			$Failed (* WIP *)
