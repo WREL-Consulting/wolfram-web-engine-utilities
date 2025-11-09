@@ -76,7 +76,6 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		Confirm[
 			localDir = CloneWebappRepository[repositoryAssoc]
 		];
-
 		(* Build and deploy the frontend *)
 		If[ OptionValue["DeployFrontend"],
 			packageJson = getFileAtTopLevel["package.json", localDir];
@@ -330,6 +329,10 @@ CloneWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				"' from URL '" <>
 				repositoryAssoc["remote"] <>
 				"'"
+			];
+			pacletClone[
+				repositoryAssoc["name"],
+				repositoryAssoc["remote"]
 			]
 		,
 		"sftp",
