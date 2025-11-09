@@ -351,7 +351,8 @@ pacletClone[name_String, remote_String] :=
 				Replace[remote,
 					s_String?(StringStartsQ["cloudobject://"]) :>
 						CloudObject[s // StringDelete[StartOfString ~~ "cloudobject://"]]
-				]
+				],
+				ForceVersionInstall -> True
 			],
 			"Failed to install paclet " <> name <> " remote " <> remote
 		]["Location"]
