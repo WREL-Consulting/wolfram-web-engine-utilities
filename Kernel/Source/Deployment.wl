@@ -9,6 +9,8 @@ Begin["`Private`"];
 (* Description:  Deploys webapps defined in a WWE webapp manifest file
  * Return:       _Success | _Failure
  *)
+(* :!CodeAnalysis::BeginBlock:: *)
+(* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
 DeployWebapps // Options = {
 	"Manifest" -> "/deployment/webapps-manifest.m",
 	"LogLabel" -> "[DeployWebapps]: ",
@@ -21,7 +23,7 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		init = OptionValue["Initialize"],
 		printInfo = WWE`Logger["INFO", "WWE", "DeployWebapps", #]&,
 		printSucc = WWE`Logger["SUCC", "WWE", "DeployWebapps", #]&,
-		printFail = WWE`Logger["ERROR","WWE", "DeployWebapps", #]&
+		printFail = WWE`Logger["FAIL", "WWE", "DeployWebapps", #]&
 	},
 	Enclose[
 		printInfo[ "Importing repositories association..." ];
@@ -52,6 +54,7 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		]
 	]
 ];
+(* :!CodeAnalysis::EndBlock:: *)
 
 
 (* -------------------------------------------------------------------------- *)
@@ -112,7 +115,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		Success["repository-deploy-success", repositoryAssoc]
 		,(* OnError *)
 		Function[e,
-			WWE`Logger["ERROR", "WWE", "DeployWebappRepository", ToString[e]];
+			WWE`Logger["FAIL", "WWE", "DeployWebappRepository", ToString[e]];
 			e
 		]
 	]
@@ -294,52 +297,54 @@ CloneWebappRepository // Options = {
 CloneWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		log = WWE`Logger["INFO", "WWE", "CloneWebappRepository", #]&
 	},
-	Switch[repositoryAssoc["type"],
-		"git",
-			log[
-				"Cloning git repository '" <>
-				repositoryAssoc["remote"] <>
-				"' to '" <>
-				repositoryAssoc["local"] <>
-				"'"
-			];
-			gitClone[
-				repositoryAssoc["remote"],
-				repositoryAssoc["local"],
-				repositoryAssoc["branch"]
-			]
-		,
-		"site:paclet",
-			log[
-				"Cloning paclet '" <>
-				repositoryAssoc["name"] <>
-				"' from paclet site '" <>
-				repositoryAssoc["site"] <>
-				"'"
-			];
-			siteClone[
-				repositoryAssoc["name"],
-				repositoryAssoc["site"]
-			]
-		,
-		"url:paclet",
-			log[
-				"Cloning paclet '" <>
-				repositoryAssoc["name"] <>
-				"' from URL '" <>
-				repositoryAssoc["remote"] <>
-				"'"
-			];
-			pacletClone[
-				repositoryAssoc["name"],
-				repositoryAssoc["remote"]
-			]
-		,
-		"sftp",
-			$Failed (* WIP *)
-		,
-		_,
-			$Failed
+	Enclose[
+		Switch[repositoryAssoc["type"],
+			"git",
+				log[
+					"Cloning git repository '" <>
+					repositoryAssoc["remote"] <>
+					"' to '" <>
+					repositoryAssoc["local"] <>
+					"'"
+				];
+				gitClone[
+					repositoryAssoc["remote"],
+					repositoryAssoc["local"],
+					repositoryAssoc["branch"]
+				]
+			,
+			"site:paclet",
+				log[
+					"Cloning paclet '" <>
+					repositoryAssoc["name"] <>
+					"' from paclet site '" <>
+					repositoryAssoc["site"] <>
+					"'"
+				];
+				siteClone[
+					repositoryAssoc["name"],
+					repositoryAssoc["site"]
+				]
+			,
+			"url:paclet",
+				log[
+					"Cloning paclet '" <>
+					repositoryAssoc["name"] <>
+					"' from URL '" <>
+					repositoryAssoc["remote"] <>
+					"'"
+				];
+				pacletClone[
+					repositoryAssoc["name"],
+					repositoryAssoc["remote"]
+				]
+			,
+			"sftp",
+				$Failed (* WIP *)
+			,
+			_,
+				$Failed
+		]
 	]
 ];
 

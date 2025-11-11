@@ -79,7 +79,7 @@ Logger[lvl_String, appName_String, functionName_String, message_String, OptionsP
 		If[ OptionValue["LogToStdout"],
 			consoleMsg = StringTemplate[
 				styledLevel <>
-				ANSITools["Style", "[`AppName` | `FunctionName`]:", Gray] <>
+				ANSITools["Style", "[`AppName` | `FunctionName`]: ", Gray] <>
 				"`Body`"
 			][content];
 			WriteString[$StandardOutputStream, consoleMsg <> "\n"]
