@@ -76,32 +76,41 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 	},
 	Enclose[
 		(* Clone in files *)
-		localDir = Confirm[
-			CloneWebappRepository[repositoryAssoc]
+		Confirm[
+			localDir = CloneWebappRepository[repositoryAssoc]
 		];
 		(* Build and deploy the frontend *)
-		packageJson = getFileAtTopLevel["package.json", localDir];
-		feLoc = DirectoryName[packageJson];
-		If[ And[
-				!FailureQ[packageJson],
-				!MissingQ[Import[packageJson, "RawJSON"]["scripts"]],
-				OptionValue["DeployFrontend"]
-			],
-			Confirm @
-			DeployWebappFrontEnd[
-				feLoc,
-				repositoryAssoc["prefix"]
-			]
+		If[ OptionValue["DeployFrontend"],
+			packageJson = getFileAtTopLevel["package.json", localDir];
+			feLoc = If[ StringQ[packageJson],
+				DirectoryName[packageJson],
+				WWE`Logger["WARN", "WWE", "DeployWebappRepository",
+					"No package.json"
+				]
+			];
+			If[ And[
+					StringQ[packageJson],
+					!MissingQ[Import[packageJson, "RawJSON"]["scripts"]]
+				],
+				Confirm @
+				DeployWebappFrontEnd[
+					feLoc,
+					repositoryAssoc["prefix"]
+				]
 
+			]
 		];
+
 		(* Build and deploy WL backend *)
-		deployWL = getFileAtTopLevel["deploy.wwe.wls", localDir];
-		If[ And[
-				!FailureQ[deployWL],
-				OptionValue["DeployBackend"]
-			],
-			Confirm @
-			DeployWebappBackend[deployWL, "Initialize" -> init]
+		If[ OptionValue["DeployBackend"],
+			deployWL = getFileAtTopLevel["deploy.wwe.wls", localDir];
+			If[ StringQ[deployWL],
+				Confirm @
+				DeployWebappBackend[deployWL, "Initialize" -> init],
+				WWE`Logger["WARN", "WWE", "DeployWebappRepository",
+					"No deploy.wwe.wls"
+				]
+			]
 		];
 		Success["repository-deploy-success", repositoryAssoc]
 		,(* OnError *)
@@ -341,24 +350,28 @@ CloneWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 
 pacletClone[name_String, remote_String] :=
 	Enclose[
-		Quiet[
-			PacletUninstall[ name ],
-			{ PacletUninstall::notfound }
-		];
-		PacletInstall[
-			Replace[remote,
-				s_String?(StringStartsQ["cloudobject://"]) :>
-					CloudObject[s // StringDelete[StartOfString ~~ "cloudobject://"]]
-			]
+		Quiet @ PacletUninstall[ name ];
+		Confirm[
+			PacletInstall[
+				Replace[remote,
+					s_String?(StringStartsQ["cloudobject://"]) :>
+						CloudObject[s // StringDelete[StartOfString ~~ "cloudobject://"]]
+				],
+				ForceVersionInstall -> True
+			],
+			"Failed to install paclet " <> name <> " remote " <> remote
 		]["Location"]
 	];
 
 siteClone[name_String, site_String] :=
 	Enclose[
-		PacletUninstall[ name ];
-		PacletInstall[name,
-			PacletSite -> site,
-			ForceVersionInstall -> True
+		Quiet @ PacletUninstall[ name ];
+		Confirm[
+			PacletInstall[name,
+				PacletSite -> site,
+				ForceVersionInstall -> True
+			],
+			"Failed to install paclet " <> name <> " from site " <> site
 		]["Location"]
 	];
 

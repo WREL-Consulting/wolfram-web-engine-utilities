@@ -62,6 +62,7 @@ crontabSpecValidQ = StringMatchQ[
 getFileAtTopLevel // Options = {
 	"Level" -> 100
 };
+getFileAtTopLevel[___] := $Failed;
 getFileAtTopLevel[fileName_String, location_String, OptionsPattern[]] :=
 	First[
 		SortBy[
