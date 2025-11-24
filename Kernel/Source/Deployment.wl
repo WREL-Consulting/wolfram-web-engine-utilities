@@ -343,7 +343,7 @@ CloneWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 	]
 ];
 
-pacletClone[name_String, remote_String] :=
+pacletClone[name_String, remote: (_String | _CloudObject)] :=
 	Enclose[
 		Quiet @ PacletUninstall[ name ];
 		Confirm[
