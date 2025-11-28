@@ -31,11 +31,19 @@ DeployWebapps[OptionsPattern[]] := Module[{
 
 		printInfo[ "Deploying repositories..." ];
 		Confirm[#, #["Information"]]& @ Map[
-			DeployWebappRepository[#,
-				"Initialize" -> init,
-				"DeployFrontend" -> OptionValue["DeployFrontend"],
-				"DeployBackend"  -> OptionValue["DeployBackend"]
-			]&,
+			Function[
+				Print[ "\n" <> StringJoin[Table["_", 80]] ];
+				printInfo[
+					StringTemplate[ "~ ``\n" ][
+						Replace[#name, Except[_String] :> #remote]
+					]
+				];
+				DeployWebappRepository[#,
+					"Initialize" -> init,
+					"DeployFrontend" -> OptionValue["DeployFrontend"],
+					"DeployBackend"  -> OptionValue["DeployBackend"]
+				]
+			],
 			repos
 		];
 
