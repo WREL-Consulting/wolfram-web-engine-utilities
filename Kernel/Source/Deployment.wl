@@ -35,7 +35,7 @@ DeployWebapps[OptionsPattern[]] := Module[{
 				printInfo[
 					(* Wrapped inside call for print order *)
 					Print[ "\n" <> StringJoin[Table["_", 80]] ];
-					StringTemplate[ "~ ``\n" ][
+					StringTemplate[ "Deploying: ``" ][
 						Replace[#name, Except[_String] :> #remote]
 					]
 				];
