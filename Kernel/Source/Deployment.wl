@@ -32,8 +32,9 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		printInfo[ "Deploying repositories..." ];
 		Confirm[#, #["Information"]]& @ Map[
 			Function[
-				Print[ "\n" <> StringJoin[Table["_", 80]] ];
 				printInfo[
+					(* Wrapped inside call for print order *)
+					Print[ "\n" <> StringJoin[Table["_", 80]] ];
 					StringTemplate[ "~ ``\n" ][
 						Replace[#name, Except[_String] :> #remote]
 					]
