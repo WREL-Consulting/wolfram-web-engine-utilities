@@ -78,10 +78,14 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 	Enclose[
 		Print[ "\n" <> StringJoin[Table["_", 80]] ];
 		Print[
-			StringTemplate[ "Deploying: ``" ][
-				Replace[repositoryAssoc["name"], Except[_String] :>
-					repositoryAssoc["remote"]
-				]
+			WWE`ANSITools["Style", Bold] @
+			Which[
+				StringQ @ repositoryAssoc["name"],
+					repositoryAssoc["name"],
+				StringQ @ repositoryAssoc["remote"],
+					repositoryAssoc["remote"],
+				True,
+					"NAME NOT FOUND"
 			]
 		];
 		(* Clone in files *)
@@ -129,7 +133,6 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		]
 	]
 ];
-(* :!CodeAnalysis::EndBlock:: *)
 
 
 (* -------------------------------------------------------------------------- *)
@@ -206,6 +209,7 @@ DeployWebappFrontEnd[feLoc_, location_String : "", OptionsPattern[]] :=
 				OptionValue["WebappLocation"], location
 			}]
 		},
+		Print["\n - Deploying Frontend - \n"];
 		(* Run build command *)
 		ConfirmAssert[
 			WWE`Logger["EXEC", "WWE", "DeployWebappFrontend", buildCommand];
@@ -283,6 +287,7 @@ DeployWebappBackend[deployScriptLoc_String, OptionsPattern[]] := Module[{
 		init = OptionValue["Initialize"]
 	},
 	Enclose[
+		Print["\n - Deploying Backend - \n"];
 		wlDeployCommand = deployScriptLoc <> init;
 		WWE`Logger["EXEC", "WWE", "DeployWebappBackend", wlDeployCommand];
 		(* Execute through wolframscript to avoid permission issues *)
@@ -308,6 +313,7 @@ CloneWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		log = WWE`Logger["INFO", "WWE", "CloneWebappRepository", #]&
 	},
 	Enclose[
+		Print["\n - Cloning files -\n"];
 		Switch[repositoryAssoc["type"],
 			"git",
 				log[
@@ -404,5 +410,6 @@ gitClone[link_String, localDir_String, branch_String] :=
 		]
 	];
 
+(* :!CodeAnalysis::EndBlock:: *)
 End[];
 EndPackage[];
