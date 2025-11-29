@@ -27,6 +27,31 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		printMsg  = WWE`Logger["MESG", "WWE", "DeployWebapps", #]&
 	},
 	Enclose[
+		Print[ "\n" <> StringJoin[Table["_", 80]] ];
+		Print[
+			WWE`ANSITools["Style", Bold, Green] @
+			"WREL WWE Deployment Tools"
+		];
+		Print[" - Repo version:   " <>
+			WWE`ANSITools["Style", Bold] @ (
+				RunProcess[
+					{"git", "rev-parse", "--abbrev-ref", "HEAD"},
+					"StandardOutput",
+					ProcessDirectory -> PacletObject["WWE"]["Location"]
+				]<>
+				":" <>
+				RunProcess[
+					{"git", "show", "--pretty=format:%s", "-s", "HEAD"},
+					"StandardOutput",
+					ProcessDirectory -> PacletObject["WWE"]["Location"]
+				]
+			)
+		];
+		Print[" - Paclet version: " <>
+			WWE`ANSITools["Style", Bold] @
+			ToString[PacletObject["WWE"]["Version"]]
+		];
+
 		printInfo[ "Importing repositories association..." ];
 		repos = Confirm @ Import[ OptionValue["Manifest"] ];
 
