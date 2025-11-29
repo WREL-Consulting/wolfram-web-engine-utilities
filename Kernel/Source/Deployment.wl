@@ -32,13 +32,6 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		printInfo[ "Deploying repositories..." ];
 		Confirm[#, #["Information"]]& @ Map[
 			Function[
-				printInfo[
-					(* Wrapped inside call for print order *)
-					Print[ "\n" <> StringJoin[Table["_", 80]] ];
-					StringTemplate[ "Deploying: ``" ][
-						Replace[#name, Except[_String] :> #remote]
-					]
-				];
 				DeployWebappRepository[#,
 					"Initialize" -> init,
 					"DeployFrontend" -> OptionValue["DeployFrontend"],
@@ -63,7 +56,6 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		]
 	]
 ];
-(* :!CodeAnalysis::EndBlock:: *)
 
 
 (* -------------------------------------------------------------------------- *)
@@ -84,6 +76,14 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		]
 	},
 	Enclose[
+		Print[ "\n" <> StringJoin[Table["_", 80]] ];
+		Print[
+			StringTemplate[ "Deploying: ``" ][
+				Replace[repositoryAssoc["name"], Except[_String] :>
+					repositoryAssoc["remote"]
+				]
+			]
+		];
 		(* Clone in files *)
 		Confirm[
 			localDir = CloneWebappRepository[repositoryAssoc]
@@ -129,6 +129,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		]
 	]
 ];
+(* :!CodeAnalysis::EndBlock:: *)
 
 
 (* -------------------------------------------------------------------------- *)
