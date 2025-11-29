@@ -35,6 +35,7 @@ Logger // Options = {
 		"FAIL"  -> Red,
 		"SUCC"  -> Green,
 		"WARN"  -> Yellow,
+		"MESG"  -> Yellow,
 		"OUT"   -> Magenta
 	}
 };

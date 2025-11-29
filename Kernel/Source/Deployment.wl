@@ -24,7 +24,7 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		printInfo = WWE`Logger["INFO", "WWE", "DeployWebapps", #]&,
 		printSucc = WWE`Logger["SUCC", "WWE", "DeployWebapps", #]&,
 		printFail = WWE`Logger["FAIL", "WWE", "DeployWebapps", #]&,
-		printMsg  = WWE`Logger[" MSG", "WWE", "DeployWebapps", #]&
+		printMsg  = WWE`Logger["MESG", "WWE", "DeployWebapps", #]&
 	},
 	Enclose[
 		printInfo[ "Importing repositories association..." ];
@@ -39,7 +39,7 @@ DeployWebapps[OptionsPattern[]] := Module[{
 						"DeployFrontend" -> OptionValue["DeployFrontend"],
 						"DeployBackend"  -> OptionValue["DeployBackend"]
 					],
-					printMsg[ StringTemplate["`Tag` | `Information`"][ #[[2]] ] ]&
+					printMsg[ #["Information"] <> " | " <> #["Tag"] ]&
 				]
 			],
 			repos
