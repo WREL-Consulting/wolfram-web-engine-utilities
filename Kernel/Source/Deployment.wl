@@ -27,31 +27,40 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		printMsg  = WWE`Logger["MESG", "WWE", "DeployWebapps", #]&
 	},
 	Enclose[
-		Print[ "\n" <> StringJoin[Table["_", 80]] ];
 		Print[
 			WWE`ANSITools["Style", Bold, Green] @
 			"WREL WWE Deployment Tools"
 		];
-		Print[" - Repo version:   " <>
-			WWE`ANSITools["Style", Bold] @ (
-				RunProcess[
-					{"git", "rev-parse", "--abbrev-ref", "HEAD"},
-					"StandardOutput",
-					ProcessDirectory -> PacletObject["WWE"]["Location"]
-				]<>
-				":" <>
-				RunProcess[
-					{"git", "show", "--pretty=format:%s", "-s", "HEAD"},
-					"StandardOutput",
-					ProcessDirectory -> PacletObject["WWE"]["Location"]
+		Print[
+			WWE`ANSITools["Style", Bold, Green][
+				" - Repo version:   "
+			] <> WWE`ANSITools["Style", Underlined, LightBlue][
+				StringDelete[
+					RunProcess[
+						{"git", "rev-parse", "--abbrev-ref", "HEAD"},
+						"StandardOutput",
+						ProcessDirectory -> PacletObject["WWE"]["Location"]
+					]<>
+					":" <>
+					RunProcess[
+						{"git", "show", "--pretty=format:%s", "-s", "HEAD"},
+						"StandardOutput",
+						ProcessDirectory -> PacletObject["WWE"]["Location"]
+					],
+					"\n"
 				]
-			)
+			]
 		];
-		Print[" - Paclet version: " <>
-			WWE`ANSITools["Style", Bold] @
-			ToString[PacletObject["WWE"]["Version"]]
+		Print[
+			WWE`ANSITools["Style", Bold, Green][
+				" - Paclet version: "
+			] <>
+			WWE`ANSITools["Style", Underlined, LightBlue][
+				ToString[PacletObject["WWE"]["Version"]]
+			]
 		];
-		Pause[0.0001];
+		Print[""];
+		Pause[0.01];
 
 		printInfo[ "Importing repositories association..." ];
 		repos = Confirm @ Import[ OptionValue["Manifest"] ];
@@ -118,7 +127,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 					"NAME NOT FOUND"
 			]
 		];
-		Pause[0.0001];
+		Pause[0.01];
 		(* Clone in files *)
 		Confirm[
 			localDir = CloneWebappRepository[repositoryAssoc]
@@ -241,7 +250,7 @@ DeployWebappFrontEnd[feLoc_, location_String : "", OptionsPattern[]] :=
 			}]
 		},
 		Print["\n - Deploying Frontend - \n"];
-		Pause[0.0001];
+		Pause[0.01];
 		(* Run build command *)
 		ConfirmAssert[
 			WWE`Logger["EXEC", "WWE", "DeployWebappFrontend", buildCommand];
@@ -319,17 +328,11 @@ DeployWebappBackend[deployScriptLoc_String, OptionsPattern[]] := Module[{
 	},
 	Enclose[
 		Print["\n - Deploying Backend - \n"];
-		Pause[0.0001];
+		Pause[0.01];
 		wlDeployCommand = deployScriptLoc <> init;
 		WWE`Logger["EXEC", "WWE", "DeployWebappBackend", wlDeployCommand];
-		(* Execute through wolframscript to avoid permission issues *)
-		Get[deployScriptLoc];
-		(* buildCode = Run["wolframscript -script " <> wlDeployCommand];
-		WWE`Logger["OUT", "WWE", "DeployWebappBackend", ToString[buildCode]];
-		ConfirmAssert[
-			buildCode === 0,
-			"Backend build and deploy script failed"
-		] *)
+		(* Execute using Get to run in same kernel for Message handling *)
+		Confirm @ Get[deployScriptLoc];
 	]
 ]
 
@@ -347,7 +350,7 @@ CloneWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 	},
 	Enclose[
 		Print["\n - Cloning files -\n"];
-		Pause[0.0001];
+		Pause[0.01];
 		Switch[repositoryAssoc["type"],
 			"git",
 				log[
