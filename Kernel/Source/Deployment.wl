@@ -23,7 +23,8 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		init = OptionValue["Initialize"],
 		printInfo = WWE`Logger["INFO", "WWE", "DeployWebapps", #]&,
 		printSucc = WWE`Logger["SUCC", "WWE", "DeployWebapps", #]&,
-		printFail = WWE`Logger["FAIL", "WWE", "DeployWebapps", #]&
+		printFail = WWE`Logger["FAIL", "WWE", "DeployWebapps", #]&,
+		printMsg  = WWE`Logger[" MSG", "WWE", "DeployWebapps", #]&
 	},
 	Enclose[
 		printInfo[ "Importing repositories association..." ];
@@ -32,10 +33,13 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		printInfo[ "Deploying repositories..." ];
 		Confirm[#, #["Information"]]& @ Map[
 			Function[
-				DeployWebappRepository[#,
-					"Initialize" -> init,
-					"DeployFrontend" -> OptionValue["DeployFrontend"],
-					"DeployBackend"  -> OptionValue["DeployBackend"]
+				ResourceFunction["WithMessageHandler"][
+					DeployWebappRepository[#,
+						"Initialize" -> init,
+						"DeployFrontend" -> OptionValue["DeployFrontend"],
+						"DeployBackend"  -> OptionValue["DeployBackend"]
+					],
+					printMsg[ StringTemplate["`Tag` | `Information`"][ #[[2]] ] ]&
 				]
 			],
 			repos
@@ -272,7 +276,6 @@ DeployWebappFrontEnd[feLoc_, location_String : "", OptionsPattern[]] :=
 		]
 	]
 ];
-
 
 (* -------------------------------------------------------------------------- *)
 (* ::Section:: *)(* DeployWebappBackend *)
