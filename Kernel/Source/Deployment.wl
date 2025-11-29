@@ -29,7 +29,7 @@ DeployWebapps[OptionsPattern[]] := Module[{
 	Enclose[
 		Print[
 			WWE`ANSITools["Style", Bold, Green] @
-			"WREL WWE Deployment Tools"
+			"\nWREL WWE Deployment Tools"
 		];
 		Print[
 			WWE`ANSITools["Style", Bold, Green][
@@ -326,19 +326,14 @@ DeployWebappFrontEnd[feLoc_, location_String : "", OptionsPattern[]] :=
 DeployWebappBackend // Options = {
 	"Initialize" -> False
 };
-DeployWebappBackend[deployScriptLoc_String, OptionsPattern[]] := Module[{
-		buildCode, wlDeployCommand,
-		init = OptionValue["Initialize"]
-	},
+DeployWebappBackend[deployScriptLoc_String, OptionsPattern[]] :=
 	Enclose[
 		Print["\n - Deploying Backend - \n"];
 		Pause[0.01];
-		wlDeployCommand = deployScriptLoc <> init;
-		WWE`Logger["EXEC", "WWE", "DeployWebappBackend", wlDeployCommand];
+		WWE`Logger["EXEC", "WWE", "DeployWebappBackend", deployScriptLoc];
 		(* Execute using Get to run in same kernel for Message handling *)
 		Confirm @ Get[deployScriptLoc];
-	]
-]
+	];
 
 
 (* -------------------------------------------------------------------------- *)
