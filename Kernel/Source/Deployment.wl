@@ -68,6 +68,19 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		printInfo[ "Deploying repositories..." ];
 		Confirm[#, #["Information"]]& @ Map[
 			Function[
+				Print[ "\n" <> StringJoin[Table["_", 80]] ];
+				Print[
+					WWE`ANSITools["Style", Bold] @
+					Which[
+						StringQ @ #["name"],
+							#["name"],
+						StringQ @ #["remote"],
+							#["remote"],
+						True,
+							"NAME NOT FOUND"
+					]
+				];
+				Pause[0.01];
 				ResourceFunction["WithMessageHandler"][
 					DeployWebappRepository[#,
 						"Initialize" -> init,
@@ -79,6 +92,10 @@ DeployWebapps[OptionsPattern[]] := Module[{
 			],
 			repos
 		];
+
+		(* Print closer separator *)
+		Print[ "\n" <> StringJoin[Table["_", 80]] ];
+		Pause[0.01];
 
 		printInfo[ "Restarting kernel pool..." ];
 		RestartKernelPool[];
@@ -115,19 +132,6 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		]
 	},
 	Enclose[
-		Print[ "\n" <> StringJoin[Table["_", 80]] ];
-		Print[
-			WWE`ANSITools["Style", Bold] @
-			Which[
-				StringQ @ repositoryAssoc["name"],
-					repositoryAssoc["name"],
-				StringQ @ repositoryAssoc["remote"],
-					repositoryAssoc["remote"],
-				True,
-					"NAME NOT FOUND"
-			]
-		];
-		Pause[0.01];
 		(* Clone in files *)
 		Confirm[
 			localDir = CloneWebappRepository[repositoryAssoc]
