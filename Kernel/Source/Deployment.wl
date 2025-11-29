@@ -23,21 +23,71 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		init = OptionValue["Initialize"],
 		printInfo = WWE`Logger["INFO", "WWE", "DeployWebapps", #]&,
 		printSucc = WWE`Logger["SUCC", "WWE", "DeployWebapps", #]&,
-		printFail = WWE`Logger["FAIL", "WWE", "DeployWebapps", #]&
+		printFail = WWE`Logger["FAIL", "WWE", "DeployWebapps", #]&,
+		printMsg  = WWE`Logger["MESG", "WWE", "DeployWebapps", #]&
 	},
 	Enclose[
+		Print[
+			WWE`ANSITools["Style", Bold, Green] @
+			"\nWREL WWE Deployment Tools"
+		];
+		Print[
+			WWE`ANSITools["Style", Bold, Green][
+				" - Repo version:   "
+			] <> WWE`ANSITools["Style", Underlined, LightBlue][
+				StringDelete[
+					RunProcess[
+						{"git", "rev-parse", "--abbrev-ref", "HEAD"},
+						"StandardOutput",
+						ProcessDirectory -> PacletObject["WWE"]["Location"]
+					]<>
+					":" <>
+					RunProcess[
+						{"git", "show", "--pretty=format:%s", "-s", "HEAD"},
+						"StandardOutput",
+						ProcessDirectory -> PacletObject["WWE"]["Location"]
+					],
+					"\n"
+				]
+			]
+		];
+		Print[""];
+		Pause[0.01];
+
 		printInfo[ "Importing repositories association..." ];
 		repos = Confirm @ Import[ OptionValue["Manifest"] ];
 
 		printInfo[ "Deploying repositories..." ];
 		Confirm[#, #["Information"]]& @ Map[
-			DeployWebappRepository[#,
-				"Initialize" -> init,
-				"DeployFrontend" -> OptionValue["DeployFrontend"],
-				"DeployBackend"  -> OptionValue["DeployBackend"]
-			]&,
+			Function[
+				Print[ "\n" <> StringJoin[Table["_", 80]] ];
+				Print[
+					WWE`ANSITools["Style", Bold] @
+					Which[
+						StringQ @ #["name"],
+							#["name"],
+						StringQ @ #["remote"],
+							#["remote"],
+						True,
+							"NAME NOT FOUND"
+					]
+				];
+				Pause[0.01];
+				ResourceFunction["WithMessageHandler"][
+					DeployWebappRepository[#,
+						"Initialize" -> init,
+						"DeployFrontend" -> OptionValue["DeployFrontend"],
+						"DeployBackend"  -> OptionValue["DeployBackend"]
+					],
+					printMsg[ #["Information"] <> " | " <> #["Tag"] ]&
+				]
+			],
 			repos
 		];
+
+		(* Print closer separator *)
+		Print[ "\n" <> StringJoin[Table["_", 80]] ];
+		Pause[0.01];
 
 		printInfo[ "Restarting kernel pool..." ];
 		RestartKernelPool[];
@@ -54,7 +104,6 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		]
 	]
 ];
-(* :!CodeAnalysis::EndBlock:: *)
 
 
 (* -------------------------------------------------------------------------- *)
@@ -196,6 +245,8 @@ DeployWebappFrontEnd[feLoc_, location_String : "", OptionsPattern[]] :=
 				OptionValue["WebappLocation"], location
 			}]
 		},
+		Print["\n - Deploying Frontend - \n"];
+		Pause[0.01];
 		(* Run build command *)
 		ConfirmAssert[
 			WWE`Logger["EXEC", "WWE", "DeployWebappFrontend", buildCommand];
@@ -259,7 +310,6 @@ DeployWebappFrontEnd[feLoc_, location_String : "", OptionsPattern[]] :=
 	]
 ];
 
-
 (* -------------------------------------------------------------------------- *)
 (* ::Section:: *)(* DeployWebappBackend *)
 (* Description:  Runs the wolfram deploy.wwe.wls script
@@ -268,22 +318,14 @@ DeployWebappFrontEnd[feLoc_, location_String : "", OptionsPattern[]] :=
 DeployWebappBackend // Options = {
 	"Initialize" -> False
 };
-DeployWebappBackend[deployScriptLoc_String, OptionsPattern[]] := Module[{
-		buildCode, wlDeployCommand,
-		init = OptionValue["Initialize"]
-	},
+DeployWebappBackend[deployScriptLoc_String, OptionsPattern[]] :=
 	Enclose[
-		wlDeployCommand = deployScriptLoc <> init;
-		WWE`Logger["EXEC", "WWE", "DeployWebappBackend", wlDeployCommand];
-		(* Execute through wolframscript to avoid permission issues *)
-		buildCode = Run["wolframscript -script " <> wlDeployCommand];
-		WWE`Logger["OUT", "WWE", "DeployWebappBackend", ToString[buildCode]];
-		ConfirmAssert[
-			buildCode === 0,
-			"Backend build and deploy script failed"
-		]
-	]
-]
+		Print["\n - Deploying Backend - \n"];
+		Pause[0.01];
+		WWE`Logger["EXEC", "WWE", "DeployWebappBackend", deployScriptLoc];
+		(* Execute using Get to run in same kernel for Message handling *)
+		Confirm @ Get[deployScriptLoc];
+	];
 
 
 (* -------------------------------------------------------------------------- *)
@@ -298,6 +340,8 @@ CloneWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		log = WWE`Logger["INFO", "WWE", "CloneWebappRepository", #]&
 	},
 	Enclose[
+		Print["\n - Cloning files -\n"];
+		Pause[0.01];
 		Switch[repositoryAssoc["type"],
 			"git",
 				log[
@@ -394,5 +438,6 @@ gitClone[link_String, localDir_String, branch_String] :=
 		]
 	];
 
+(* :!CodeAnalysis::EndBlock:: *)
 End[];
 EndPackage[];
