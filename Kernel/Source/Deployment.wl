@@ -51,6 +51,7 @@ DeployWebapps[OptionsPattern[]] := Module[{
 			WWE`ANSITools["Style", Bold] @
 			ToString[PacletObject["WWE"]["Version"]]
 		];
+		Pause[0.0001];
 
 		printInfo[ "Importing repositories association..." ];
 		repos = Confirm @ Import[ OptionValue["Manifest"] ];
@@ -117,6 +118,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 					"NAME NOT FOUND"
 			]
 		];
+		Pause[0.0001];
 		(* Clone in files *)
 		Confirm[
 			localDir = CloneWebappRepository[repositoryAssoc]
@@ -239,6 +241,7 @@ DeployWebappFrontEnd[feLoc_, location_String : "", OptionsPattern[]] :=
 			}]
 		},
 		Print["\n - Deploying Frontend - \n"];
+		Pause[0.0001];
 		(* Run build command *)
 		ConfirmAssert[
 			WWE`Logger["EXEC", "WWE", "DeployWebappFrontend", buildCommand];
@@ -316,6 +319,7 @@ DeployWebappBackend[deployScriptLoc_String, OptionsPattern[]] := Module[{
 	},
 	Enclose[
 		Print["\n - Deploying Backend - \n"];
+		Pause[0.0001];
 		wlDeployCommand = deployScriptLoc <> init;
 		WWE`Logger["EXEC", "WWE", "DeployWebappBackend", wlDeployCommand];
 		(* Execute through wolframscript to avoid permission issues *)
@@ -343,6 +347,7 @@ CloneWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 	},
 	Enclose[
 		Print["\n - Cloning files -\n"];
+		Pause[0.0001];
 		Switch[repositoryAssoc["type"],
 			"git",
 				log[
