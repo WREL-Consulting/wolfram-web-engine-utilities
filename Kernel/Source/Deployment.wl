@@ -51,14 +51,6 @@ DeployWebapps[OptionsPattern[]] := Module[{
 				]
 			]
 		];
-		Print[
-			WWE`ANSITools["Style", Bold, Green][
-				" - Paclet version: "
-			] <>
-			WWE`ANSITools["Style", Underlined, LightBlue][
-				ToString[PacletObject["WWE"]["Version"]]
-			]
-		];
 		Print[""];
 		Pause[0.01];
 
