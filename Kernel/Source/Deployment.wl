@@ -294,12 +294,13 @@ DeployWebappBackend[deployScriptLoc_String, OptionsPattern[]] := Module[{
 		wlDeployCommand = deployScriptLoc <> init;
 		WWE`Logger["EXEC", "WWE", "DeployWebappBackend", wlDeployCommand];
 		(* Execute through wolframscript to avoid permission issues *)
-		buildCode = Run["wolframscript -script " <> wlDeployCommand];
+		Get[deployScriptLoc];
+		(* buildCode = Run["wolframscript -script " <> wlDeployCommand];
 		WWE`Logger["OUT", "WWE", "DeployWebappBackend", ToString[buildCode]];
 		ConfirmAssert[
 			buildCode === 0,
 			"Backend build and deploy script failed"
-		]
+		] *)
 	]
 ]
 
