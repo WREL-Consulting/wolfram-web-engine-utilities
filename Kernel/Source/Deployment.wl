@@ -137,16 +137,24 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 					"No package.json"
 				]
 			];
-			If[ And[
-					StringQ[packageJson],
-					!MissingQ[Import[packageJson, "RawJSON"]["scripts", "build:wwe"]]
-				],
-				Confirm @
-				DeployWebappFrontEnd[
-					feLoc,
-					repositoryAssoc["prefix"]
-				]
-
+			Which[
+				Not @ StringQ[packageJson],
+					WWE`Logger["WARN", "WWE", "DeployWebappRepository",
+						"No package.json found"
+					],
+				MissingQ[Import[packageJson, "RawJSON"]["scripts", "build:wwe"]],
+					WWE`Logger["WARN", "WWE", "DeployWebappRepository",
+						"No build:wwe script in " <> packageJson
+					],
+				True,
+					Confirm @
+					DeployWebappFrontEnd[
+						feLoc,
+						repositoryAssoc["prefix"]
+					]
+			],
+			WWE`Logger["WARN", "WWE", "DeployWebappRepository",
+				"Frontend deployment disabled"
 			]
 		];
 
@@ -157,8 +165,11 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 				Confirm @
 				DeployWebappBackend[deployWL, "Initialize" -> init],
 				WWE`Logger["WARN", "WWE", "DeployWebappRepository",
-					"No deploy.wwe.wls"
+					"No deploy.wwe.wls found"
 				]
+			],
+			WWE`Logger["WARN", "WWE", "DeployWebappRepository",
+				"Backend deployment disabled"
 			]
 		];
 		Success["repository-deploy-success", repositoryAssoc]
