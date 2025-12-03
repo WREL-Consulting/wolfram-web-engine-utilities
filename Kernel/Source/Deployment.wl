@@ -139,7 +139,7 @@ DeployWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 			];
 			If[ And[
 					StringQ[packageJson],
-					!MissingQ[Import[packageJson, "RawJSON"]["scripts"]]
+					!MissingQ[Import[packageJson, "RawJSON"]["scripts", "build:wwe"]]
 				],
 				Confirm @
 				DeployWebappFrontEnd[
