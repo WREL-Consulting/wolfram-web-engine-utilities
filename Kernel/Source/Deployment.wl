@@ -1,3 +1,6 @@
+(* :!CodeAnalysis::BeginBlock:: *)
+(* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
+
 BeginPackage["WWE`FileScope`Deployment`", {
 	"WWE`",
 	"WWE`Private`"
@@ -9,8 +12,6 @@ Begin["`Private`"];
 (* Description:  Deploys webapps defined in a WWE webapp manifest file
  * Return:       _Success | _Failure
  *)
-(* :!CodeAnalysis::BeginBlock:: *)
-(* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
 DeployWebapps // Options = {
 	"Manifest" -> "/deployment/webapps-manifest.m",
 	"LogLabel" -> "[DeployWebapps]: ",
@@ -321,6 +322,7 @@ DeployWebappFrontEnd[feLoc_, location_String : "", OptionsPattern[]] :=
 	]
 ];
 
+
 (* -------------------------------------------------------------------------- *)
 (* ::Section:: *)(* DeployWebappBackend *)
 (* Description:  Runs the wolfram deploy.wwe.wls script
@@ -344,9 +346,7 @@ DeployWebappBackend[deployScriptLoc_String, OptionsPattern[]] :=
 (* Description:  Clones the repositories from the repo assoc
  * Return:       _String | _Failure
  *)
-CloneWebappRepository // Options = {
-
-};
+CloneWebappRepository // Options = {};
 CloneWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		log = WWE`Logger["INFO", "WWE", "CloneWebappRepository", #]&
 	},
@@ -449,6 +449,191 @@ gitClone[link_String, localDir_String, branch_String] :=
 		]
 	];
 
-(* :!CodeAnalysis::EndBlock:: *)
+
+(* -------------------------------------------------------------------------- *)
+(* ::Section:: *)(* ContinuousDeploymentWebhookHandler *)
+(* Description:  Handles incoming webhook requests from either Stash or GitHub
+ *               redeploying the tracked branch inside webapps-manifest.m if a
+ *               branch is merged into it
+ * Return:       _HTTPResponse | _Failure
+ *)
+ContinuousDeploymentWebhookHandler[] :=
+	Module[
+		{
+			ret,
+			httpBodyIn, httpHeadersIn,
+			log = WWE`Logger[
+				"INFO",
+				"WWE",
+				"ContinuousDeploymentWebhookHandler",
+				#
+			]&
+		},
+		Enclose[
+			(* Log incoming request *)
+			log[ToString @ HTTPRequestData[]];
+
+			(* Parse HTTP request *)
+			ConfirmMatch[
+				httpBodyIn =
+					Association @
+					ImportString[HTTPRequestData["Body"], "RawJSON"],
+				_Association,
+				"Body is not an association: " <> ToString[httpBodyIn]
+			];
+			ConfirmMatch[
+				httpHeadersIn =
+					Association @
+					ImportString[HTTPRequestData["Headers"], "RawJSON"],
+				_Association,
+				"Headers are not an association: " <> ToString[httpHeadersIn]
+			];
+
+			(* Act on request *)
+			log["Got pinged at " <> DateString["ISODateTime"]];
+			ret = handleReq[httpHeadersIn, httpBodyIn];
+			If[FailureQ[ret],
+				HTTPResponse[ToString[ret], <|"StatusCode" -> 500|>],
+				HTTPResponse["", <|"StatusCode" -> 200|>]
+			]
+		]
+	];
+
+handleStash[httpBody_] :=
+	Module[{
+			event, mergeDest, link, repoAssoc,
+			log = WWE`Logger[
+				"INFO",
+				"WWE",
+				"ContinuousDeploymentWebhookHandler",
+				"\t" <> #
+			]&
+		},
+		Enclose[
+			log[" - handleStash - "];
+
+			(* log event *)
+			event = httpBody["eventKey"];
+			log["Event: '" <> event <> "'"];
+
+			ConfirmBy[
+				event,
+				StringQ,
+				"Event '" <> ToString[event] <> "' is not a string"
+			];
+
+			(* If PR merge event, pull and redeploy project *)
+			If[event === "pr:merged",
+				ConfirmBy[
+					mergeDest = httpBody["pullRequest", "toRef", "id"],
+					StringQ,
+					"Merge destination " <> ToString[mergeDest] <>
+					" is not a string"
+				];
+
+				log["found a merge target of '" <> mergeDest <> "'"];
+				ConfirmBy[
+					link = SelectFirst[
+						httpBody[
+							"pullRequest", "toRef",
+							"repository",  "links",
+							"clone"
+						],
+						#name === "ssh"&
+					]["href"]
+					,
+					StringQ,
+					"Clone link " <> ToString[link] <> " is not a string"
+				];
+
+				log["Repository: '" <> link <> "'"];
+				repoAssoc = Import["/deployment/webapps-manifest.m", "WL"];
+				If[ And[
+						repoAssoc =!= <||>,
+						mergeDest === ("refs/heads/"<>repoAssoc["branch"])
+					]
+					,
+					(*pull and deploy the repository*)
+					log["Redeploying webapps"];
+					WWE`DeployWebappRepository[ repoAssoc ]
+				]
+			]
+		]
+	];
+
+handleGithub[httpBody_] :=
+	Module[{
+			event, mergeDest, link, repoAssoc,
+			log = WWE`Logger[
+				"INFO",
+				"WWE",
+				"ContinuousDeploymentWebhookHandler",
+				"\t" <> #
+			]&
+		},
+		Enclose[
+			log[" - handleGithub - "];
+
+			(* log event *)
+			event = httpBody["action"];
+			log["Event: '" <> event <> "'"];
+
+			ConfirmBy[
+				event,
+				StringQ,
+				"Event '"<>ToString[event]<>"' is not a string"
+			];
+
+			(* If PR merge event, pull and redeploy project *)
+			If[event === "closed",
+				ConfirmBy[
+					mergeDest = httpBody["pull_request", "base", "ref"],
+					StringQ,
+					"Merge destination " <> ToString[mergeDest] <>
+					" is not a string"
+				];
+
+				log["Found merge target: '" <> mergeDest <> "'"];
+				ConfirmBy[
+					link = httpBody["pull_request", "base", "repo", "ssh_url"],
+					StringQ,
+					"Clone link " <> ToString[link] <> " is not a string"
+				];
+
+				log["Repository: '" <> link <> "'"];
+				repoAssoc = Import["/deployment/webapps-manifest.m", "WL"];
+				If[ StringMatchQ[mergeDest, repoAssoc["branch"]],
+					(*pull and deploy the repository*)
+					log["Redeploying webapps"];
+					WWE`DeployWebappRepository[ repoAssoc ]
+				]
+			]
+		]
+	];
+
+handleReq[httpHeaders_, httpBody_] :=
+	Module[{
+			log = WWE`Logger[
+				"INFO",
+				"WWE",
+				"ContinuousDeploymentWebhookHandler",
+				"\t" <> #
+			]&
+		},
+		log[" - handleReq - "];
+		Which[
+			StringContainsQ[httpHeaders["User-Agent"], "GitHub"],
+				log["GitHub event"];
+				handleGithub[httpBody],
+			(* StringContainsQ[httpHeaders["User-Agent"], "Stash"], *)
+			True,
+				log["Non-GitHub event"];
+				handleStash[httpBody]
+		]
+	];
+
+
 End[];
 EndPackage[];
+
+(* :!CodeAnalysis::EndBlock:: *)
