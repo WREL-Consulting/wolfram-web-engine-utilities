@@ -66,7 +66,7 @@ If[ Not @ FileExistsQ[#], CreateFile[#]]& /@ {$stdoutLogFile, $stderrLogFile};
 
 (* Open log streams *)
 {$stdoutLogStream, $stderrLogStream} =
-	OpenAppend[#, Method -> "WithHeader"]& /@ {$stdoutLogFile, $stderrLogFile};\
+	OpenAppend[#, Method -> "WithHeader"]& /@ {$stdoutLogFile, $stderrLogFile};
 
 (* Route stdout and messages to log streams *)
 AppendTo[System`$Output,   $stdoutLogFile];
