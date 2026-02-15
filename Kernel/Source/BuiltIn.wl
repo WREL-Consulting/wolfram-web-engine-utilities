@@ -5,12 +5,69 @@ BeginPackage["WWE`FileScope`BuiltIn`", {
 }];
 Begin["`Private`"];
 
-(* Route stdout and messages to log-files *)
 $stdoutLogFile = FileNameJoin[{"var", "log", "wwe-stdout.log"}];
 $stderrLogFile = FileNameJoin[{"var", "log", "wwe-stderr.log"}];
+$headerString[] :=
+	StringTemplate["`datetime` - [`domain`]: "][<|
+		"domain" -> If[ $EvaluationEnvironment === "WebAPI",
+			HTTPRequestData["Path"],
+			$ProcessID
+		],
+		"datetime" -> DateString[{
+			"Year", "-", "Month", "-", "Day",
+			"T",
+			"Hour", ":", "Minute", ":", "Second"
+		}]
+	|>];
+DefineOutputStreamMethod[
+	"WithHeader",
+	{
+		"ConstructorFunction" ->
+			Function[{streamname, isAppend, caller, opts},
+				With[{state = Unique["AddHeaderStream"]},
+					state["stream"] =
+						OpenWrite[streamname, BinaryFormat -> True];
+					state["pos"] = 0;
+					{True, state}
+				]
+			],
+		"CloseFunction" ->
+			Function[state, Close[state["stream"]]; Remove[state]],
+		"StreamPositionFunction" ->
+			Function[state, {state["pos"], state}],
+		"WriteFunction" ->
+			Function[{state, bytes},
+				Module[{
+						result, nBytes,
+						write =
+							(* Don't add header to end of line characters *)
+							If[ MatchQ[bytes, {13 | 10}],
+								bytes,
+								Join[$headerString[], bytes]
+							]
+					},
+					result = BinaryWrite[state["stream"], write];
+					nBytes =
+						If[result === state["stream"],
+							Length @ write,
+							0
+						];
+					state["pos"] += nBytes;
+					{nBytes, state}
+				]
+			]
+	}
+];
+
+(* Create log files if they don't exist *)
 If[ Not @ FileExistsQ[#], CreateFile[#]]& /@ {$stdoutLogFile, $stderrLogFile};
-{$stdoutLogStream, $stderrLogStream} = OpenAppend /@ {$stdoutLogFile, $stderrLogFile};
-AppendTo[System`$Output,  $stdoutLogFile];
+
+(* Open log streams *)
+{$stdoutLogStream, $stderrLogStream} =
+	OpenAppend[#, Method -> "WithHeader"]& /@ {$stdoutLogFile, $stderrLogFile};\
+
+(* Route stdout and messages to log streams *)
+AppendTo[System`$Output,   $stdoutLogFile];
 AppendTo[System`$Messages, $stderrLogFile];
 
 End[];
