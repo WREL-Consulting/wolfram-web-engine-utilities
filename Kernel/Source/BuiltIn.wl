@@ -11,7 +11,7 @@ $headerBytes[] :=
 	ToCharacterCode @
 	StringTemplate["`datetime` - [`domain`]: "][<|
 		"domain" -> If[ $EvaluationEnvironment === "WebAPI",
-			HTTPRequestData["Path"],
+			HTTPRequestData["PathString"],
 			$ProcessID
 		],
 		"datetime" -> DateString[{
@@ -30,6 +30,7 @@ DefineOutputStreamMethod[
 					state["stream"] =
 						OpenWrite[streamname, BinaryFormat -> True];
 					state["pos"] = 0;
+					state["newline"] = True;
 					{True, state}
 				]
 			],
@@ -43,9 +44,9 @@ DefineOutputStreamMethod[
 						result, nBytes,
 						write =
 							(* Don't add header to end of line characters *)
-							If[ MatchQ[bytes, {13 | 10}],
-								bytes,
-								Join[$headerBytes[], bytes]
+							If[ state["newline"] && !MatchQ[bytes, {Repeated[13 | 10, {1, 2}]}],
+								Join[$headerBytes[], bytes],
+								bytes
 							]
 					},
 					result = BinaryWrite[state["stream"], write];
@@ -55,6 +56,7 @@ DefineOutputStreamMethod[
 							0
 						];
 					state["pos"] += nBytes;
+					state["newline"] = MatchQ[Last[bytes, {}], 13 | 10];
 					{nBytes, state}
 				]
 			]
@@ -69,8 +71,8 @@ If[ Not @ FileExistsQ[#], CreateFile[#]]& /@ {$stdoutLogFile, $stderrLogFile};
 	OpenAppend[#, Method -> "WithHeader"]& /@ {$stdoutLogFile, $stderrLogFile};
 
 (* Route stdout and messages to log streams *)
-AppendTo[System`$Output,   $stdoutLogFile];
-AppendTo[System`$Messages, $stderrLogFile];
+AppendTo[System`$Output,   $stdoutLogStream];
+AppendTo[System`$Messages, $stderrLogStream];
 
 End[];
 EndPackage[];
