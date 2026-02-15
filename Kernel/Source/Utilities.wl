@@ -5,53 +5,47 @@ BeginPackage["WWE`FileScope`Utilities`", {
 Begin["`Private`"];
 
 (* -------------------------------------------------------------------------- *)
-(* ::Section:: *)(* camelToSnakeCase *)
-(* Description:  Converts a camelCase string to snake_case
- * Return:       String
- *)
-camelToSnakeCase = (
-	StringReplace[{
-		PunctuationCharacter -> "",
-		" " -> "-"
-	}] /* StringReplace[{
-		(StartOfString~~a_?(Not@*LowerCaseQ)):>ToLowerCase[a],
-		a_?(LowerCaseQ) ~~b_?(Not@*LowerCaseQ) :> (a<>"-"<>ToLowerCase[b]),
-		b_?(Not@*LowerCaseQ)~~a_?(LowerCaseQ)  :> ("-"<>ToLowerCase[b]<>a)
-	}] /* ToLowerCase
-);
-
-(* -------------------------------------------------------------------------- *)
 (* ::Section:: *)(* crontabSpecValidQ *)
 (* Description:  Validates a crontab specification
  * Return:       True | False
  *)
+cronMacrosP = Alternatives[
+	"annually","yearly","monthly","weekly",
+	"daily","midnight","hourly","reboot"
+];
+minuteStringP = ("\\*" | (ToString /@ Range[0, 59]));
+hourStringP = ("\\*" | (ToString /@ Range[0, 23]));
+daysStringP = ("\\*" |( ToString /@ Range[1, 31]));
+monthStringP = Alternatives[
+	"\\*",
+	ToString /@ Range[1, 12],
+	{
+		"jan","feb","mar","apr","may","jun",
+		"jul","aug","sep","oct","nov","dec"
+	}
+];
+weekdayStringP = Alternatives[
+	"\\*",
+	ToString /@ Range[0, 7],
+	{
+		"mon","tue","wed","thu","fri","sat","sun"
+	}
+];
 crontabSpecValidQ = StringMatchQ[
-	(
-		("\\*" | (ToString /@ Range[0, 59])) ~~
-		("," ~~ ("\\*" | (ToString /@ Range[0, 59])))...
-	) ~~ " " ~~ (
-		("\\*" | (ToString /@ Range[0, 23])) ~~
-		("," ~~ ("\\*" | (ToString /@ Range[0, 23])))...
-	) ~~ " " ~~ (
-		("\\*" | (ToString /@ Range[1, 31])) ~~
-		("," ~~ ("\\*" | (ToString /@ Range[1, 31])))...
-	) ~~ " " ~~ (
-		("\\*" | (ToString /@ Range[1, 12]) | {
-			"jan","feb","mar","apr","may","jun",
-			"jul","aug","sep","oct","nov","dec"
-		}) ~~
-		("," ~~ ("\\*" | (ToString /@ Range[1, 12]) | {
-			"jan","feb","mar","apr","may","jun",
-			"jul","aug","sep","oct","nov","dec"
-		}))...
-	) ~~ " " ~~ (
-		("\\*" | (ToString /@ Range[0, 6]) | {
-			"mon","tue","wed","thu","fri","sat","sun"
-		}) ~~
-		("," ~~ ("\\*" | (ToString /@ Range[0, 6]) | {
-			"mon","tue","wed","thu","fri","sat","sun"
-		}))...
-	)
+	Alternatives[
+		StringExpression[ "@", cronMacrosP ],
+		StringExpression[
+			StringExpression[minuteStringP, ( "," ~~ minuteStringP)...],
+			WhitespaceCharacter..,
+			StringExpression[hourStringP, ("," ~~ hourStringP)...],
+			WhitespaceCharacter..,
+			StringExpression[daysStringP, ("," ~~ daysStringP)...],
+			WhitespaceCharacter..,
+			StringExpression[monthStringP, ("," ~~ monthStringP)...],
+			WhitespaceCharacter..,
+			StringExpression[weekdayStringP, ("," ~~ weekdayStringP)...]
+		]
+	]
 ];
 
 (* -------------------------------------------------------------------------- *)
