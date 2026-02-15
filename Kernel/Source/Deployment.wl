@@ -195,15 +195,15 @@ DeployExpression // Options = {
 };
 DeployExpression[expr_, location_String : Automatic, OptionsPattern[]] :=
 	Module[{
-		loc = location /. Automatic -> CreateUUID[],
+		dir, deployment,
+		loc = location /. Automatic -> CreateUUID[]
+	},
+	Enclose[
 		dir = FileNameJoin[{
 			OptionValue["WebappLocation"],
 			OptionValue["ActiveExtension"],
-			location
-		}],
-		deployment
-	},
-	Enclose[
+			loc
+		}];
 		(* Create directory id it doesn't exist *)
 		If[!DirectoryQ[dir],
 			Confirm[
