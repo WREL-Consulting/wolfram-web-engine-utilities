@@ -7,7 +7,8 @@ Begin["`Private`"];
 
 $stdoutLogFile = FileNameJoin[{"var", "log", "wwe-stdout.log"}];
 $stderrLogFile = FileNameJoin[{"var", "log", "wwe-stderr.log"}];
-$headerString[] :=
+$headerBytes[] :=
+	ToCharacterCode @
 	StringTemplate["`datetime` - [`domain`]: "][<|
 		"domain" -> If[ $EvaluationEnvironment === "WebAPI",
 			HTTPRequestData["Path"],
@@ -19,6 +20,7 @@ $headerString[] :=
 			"Hour", ":", "Minute", ":", "Second"
 		}]
 	|>];
+
 DefineOutputStreamMethod[
 	"WithHeader",
 	{
@@ -43,7 +45,7 @@ DefineOutputStreamMethod[
 							(* Don't add header to end of line characters *)
 							If[ MatchQ[bytes, {13 | 10}],
 								bytes,
-								Join[$headerString[], bytes]
+								Join[$headerBytes[], bytes]
 							]
 					},
 					result = BinaryWrite[state["stream"], write];
