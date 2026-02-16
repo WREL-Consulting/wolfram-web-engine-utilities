@@ -244,7 +244,7 @@ DeployWebappFrontEnd // Options = {
 DeployWebappFrontEnd[feLoc_, location_String : "", OptionsPattern[]] :=
 	Enclose[
 		Block[{ buildCode, buildLoc,
-			log = WWE`Logger["IFNO", "WWE", "DeployWebappFrontEnd", #]&,
+			log = WWE`Logger["INFO", "WWE", "DeployWebappFrontEnd", #]&,
 			buildCommand =
 				StringRiffle[{
 						"cd "<> feLoc,
