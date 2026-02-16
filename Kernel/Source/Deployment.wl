@@ -15,11 +15,11 @@ importWebappsManifest[ manifest: (_String | Automatic): Automatic ] :=
 				OptionValue["Manifest"]
 			];
 			ConfirmMatch[
-				Replace[manifest, {
-					_String?(StringEndsQ[#, ".json"]&) :>
-						Import[manifest, "RawJSON"]["webapps"],
-					_String?(StringEndsQ[#, ".m" | ".wl"]&) :>
-						Import[manifest, "WL"],
+				Replace[path, {
+					p_String?(StringEndsQ[#, ".json"]&) :>
+						Import[p, "RawJSON"]["webapps"],
+					p_String?(StringEndsQ[#, ".m" | ".wl"]&) :>
+						Import[p, "WL"],
 					Except[_String] :> (
 						Return[
 							Failure["InvalidManifest",
