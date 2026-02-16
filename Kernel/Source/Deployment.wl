@@ -10,9 +10,9 @@ Begin["`Private`"];
 importWebappsManifest[ manifest: (_String | Automatic): Automatic ] :=
 	Module[{ path },
 		Enclose[
-			path = If[ OptionValue["Manifest"] === Automatic,
+			path = If[ manifest === Automatic,
 				First @ FileNames["webapps-manifest." ~~ ("m"|"wl"|"json")],
-				OptionValue["Manifest"]
+				manifest
 			];
 			ConfirmMatch[
 				Replace[path, {
