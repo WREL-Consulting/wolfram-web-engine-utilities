@@ -11,7 +11,13 @@ importWebappsManifest[ manifest: (_String | Automatic): Automatic ] :=
 	Module[{ path },
 		Enclose[
 			path = If[ manifest === Automatic,
-				First @ FileNames["webapps-manifest." ~~ ("m"|"wl"|"json")],
+				Confirm[
+					First[
+						FileNames["webapps-manifest." ~~ ("m"|"wl"|"json")],
+						$Failed
+					],
+					"Could not find manifest file in deployment directory"
+				],
 				manifest
 			];
 			ConfirmMatch[
