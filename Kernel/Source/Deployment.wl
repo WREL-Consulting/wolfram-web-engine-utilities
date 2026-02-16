@@ -7,6 +7,35 @@ BeginPackage["WWE`FileScope`Deployment`", {
 }];
 Begin["`Private`"];
 
+importWebappsManifest[ manifest: (_String | Automatic): Automatic ] :=
+	Module[{},
+		Enclose[
+			manifest = If[ OptionValue["Manifest"] === Automatic,
+				First @ FileNames["webapps-manifest." ~~ ("m"|"wl"|"json")],
+				OptionValue["Manifest"]
+			];
+			ConfirmMatch[
+				Replace[manifest, {
+					_String?(StringEndsQ[#, ".json"]&) :>
+						Import[manifest, "RawJSON"]["webapps"],
+					_String?(StringEndsQ[#, ".m" | ".wl"]&) :>
+						Import[manifest, "WL"],
+					Except[_String] :> (
+						Return[
+							Failure["InvalidManifest",
+								<|"Information" ->
+									"Manifest file must be .json, .m, or .wl"
+								|>
+							]
+						]
+					)
+				}],
+				{ ___Association },
+				"Failed to parse WL manifest"
+			]
+		]
+	];
+
 (* -------------------------------------------------------------------------- *)
 (* ::Section:: *)(* DeployWebapps *)
 (* Description:  Deploys webapps defined in a WWE webapp manifest file
@@ -20,7 +49,7 @@ DeployWebapps // Options = {
 	"DeployBackend" -> True
 };
 DeployWebapps[OptionsPattern[]] := Module[{
-		repos, manifest,
+		repos,
 		init = OptionValue["Initialize"],
 		printInfo = WWE`Logger["INFO", "WWE", "DeployWebapps", #]&,
 		printSucc = WWE`Logger["SUCC", "WWE", "DeployWebapps", #]&,
@@ -57,27 +86,7 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		Pause[0.01];
 
 		printInfo[ "Importing webapps manifest..." ];
-		manifest = If[ OptionValue["Manifest"] === Automatic,
-			First @ FileNames["webapps-manifest." ~~ ("m"|"wl"|"json")],
-			OptionValue["Manifest"]
-		];
-		repos = ConfirmMatch[
-			Replace[manifest, {
-				_String?(StringEndsQ[#, ".json"]&) :>
-					Import[manifest, "RawJSON"]["webapps"],
-				_String?(StringEndsQ[#, ".m" | ".wl"]&) :>
-					Import[manifest, "WL"],
-				Except[_String] :> (
-					Return[
-						Failure["InvalidManifest",
-							<|"Information" -> "Manifest file must be .json, .m, or .wl"|>
-						]
-					]
-				)
-			}],
-			{ ___Association },
-			"Failed to parse WL manifest"
-		];
+		repos = Confirm @ importWebappsManifest[ OptionValue["Manifest"] ];
 
 		printInfo[ "Deploying repositories..." ];
 		Map[
@@ -569,7 +578,7 @@ handleStash[httpBody_] :=
 				];
 
 				log["Repository: '" <> link <> "'"];
-				repoAssoc = Import["/deployment/webapps-manifest.m", "WL"];
+				repoAssoc = importWebappsManifest[ Automatic ];
 				If[ And[
 						repoAssoc =!= <||>,
 						mergeDest === ("refs/heads/"<>repoAssoc["branch"])
@@ -623,7 +632,7 @@ handleGithub[httpBody_] :=
 				];
 
 				log["Repository: '" <> link <> "'"];
-				repoAssoc = Import["/deployment/webapps-manifest.m", "WL"];
+				repoAssoc = importWebappsManifest[ Automatic ];
 				If[ StringMatchQ[mergeDest, repoAssoc["branch"]],
 					(*pull and deploy the repository*)
 					log["Redeploying webapps"];
