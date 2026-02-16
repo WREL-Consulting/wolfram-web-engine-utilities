@@ -8,9 +8,9 @@ BeginPackage["WWE`FileScope`Deployment`", {
 Begin["`Private`"];
 
 importWebappsManifest[ manifest: (_String | Automatic): Automatic ] :=
-	Module[{},
+	Module[{ path },
 		Enclose[
-			manifest = If[ OptionValue["Manifest"] === Automatic,
+			path = If[ OptionValue["Manifest"] === Automatic,
 				First @ FileNames["webapps-manifest." ~~ ("m"|"wl"|"json")],
 				OptionValue["Manifest"]
 			];
