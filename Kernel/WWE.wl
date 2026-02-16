@@ -4,6 +4,7 @@
 	"Public`",
 	"Private`",
 
+	"Source`BuiltIn`",
 	"Source`Utilities`",
 	"Source`ServerTools`",
 	"Source`Database`",
