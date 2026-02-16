@@ -13,14 +13,14 @@ Begin["`Private`"];
  * Return:       _Success | _Failure
  *)
 DeployWebapps // Options = {
-	"Manifest" -> "/deployment/webapps-manifest.m",
+	"Manifest" -> Automatic,
 	"LogLabel" -> "[DeployWebapps]: ",
 	"Initialize" -> False,
 	"DeployFrontend" -> True,
 	"DeployBackend" -> True
 };
 DeployWebapps[OptionsPattern[]] := Module[{
-		repos,
+		repos, manifest,
 		init = OptionValue["Initialize"],
 		printInfo = WWE`Logger["INFO", "WWE", "DeployWebapps", #]&,
 		printSucc = WWE`Logger["SUCC", "WWE", "DeployWebapps", #]&,
@@ -35,7 +35,8 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		Print[
 			WWE`ANSITools["Style", Bold, Green][
 				" - Repo version:   "
-			] <> WWE`ANSITools["Style", Underlined, LightBlue][
+			] <>
+			WWE`ANSITools["Style", Underlined, LightBlue][
 				StringDelete[
 					RunProcess[
 						{"git", "rev-parse", "--abbrev-ref", "HEAD"},
@@ -55,11 +56,31 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		Print[""];
 		Pause[0.01];
 
-		printInfo[ "Importing repositories association..." ];
-		repos = Confirm @ Import[ OptionValue["Manifest"] ];
+		printInfo[ "Importing webapps manifest..." ];
+		manifest = If[ OptionValue["Manifest"] === Automatic,
+			First @ FileNames["webapps-manifest." ~~ ("m"|"wl"|"json")],
+			OptionValue["Manifest"]
+		];
+		repos = ConfirmMatch[
+			Replace[manifest, {
+				_String?(StringEndsQ[#, ".json"]&) :>
+					Import[manifest, "RawJSON"]["webapps"],
+				_String?(StringEndsQ[#, ".m" | ".wl"]&) :>
+					Import[manifest, "WL"],
+				Except[_String] :> (
+					Return[
+						Failure["InvalidManifest",
+							<|"Information" -> "Manifest file must be .json, .m, or .wl"|>
+						]
+					]
+				)
+			}],
+			{ ___Association },
+			"Failed to parse WL manifest"
+		];
 
 		printInfo[ "Deploying repositories..." ];
-		Confirm[#, #["Information"]]& @ Map[
+		Map[
 			Function[
 				Print[ "\n" <> StringJoin[Table["_", 80]] ];
 				Print[
@@ -75,6 +96,7 @@ DeployWebapps[OptionsPattern[]] := Module[{
 				];
 				Pause[0.01];
 				ResourceFunction["WithMessageHandler"][
+					Confirm @
 					DeployWebappRepository[#,
 						"Initialize" -> init,
 						"DeployFrontend" -> OptionValue["DeployFrontend"],
