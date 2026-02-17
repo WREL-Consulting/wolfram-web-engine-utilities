@@ -7,6 +7,13 @@ BeginPackage["WWE`FileScope`Deployment`", {
 }];
 Begin["`Private`"];
 
+
+(* -------------------------------------------------------------------------- *)
+(* ::Section:: *)(* importWebappsManifest *)
+(* Description:  Import the webapp manifest or attempt to find it
+ *               automatically in the deployment directory
+ * Return:       { ___Association } | _Failure
+ *)
 importWebappsManifest[ manifest: (_String | Automatic): Automatic ] :=
 	Module[{ path },
 		Enclose[
@@ -44,6 +51,7 @@ importWebappsManifest[ manifest: (_String | Automatic): Automatic ] :=
 			]
 		]
 	];
+
 
 (* -------------------------------------------------------------------------- *)
 (* ::Section:: *)(* DeployWebapps *)
