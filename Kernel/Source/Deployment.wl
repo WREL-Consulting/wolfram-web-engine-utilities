@@ -7,13 +7,59 @@ BeginPackage["WWE`FileScope`Deployment`", {
 }];
 Begin["`Private`"];
 
+
+(* -------------------------------------------------------------------------- *)
+(* ::Section:: *)(* importWebappsManifest *)
+(* Description:  Import the webapp manifest or attempt to find it
+ *               automatically in the deployment directory
+ * Return:       { ___Association } | _Failure
+ *)
+importWebappsManifest[ manifest: (_String | Automatic): Automatic ] :=
+	Module[{ path },
+		Enclose[
+			path = If[ manifest === Automatic,
+				Confirm[
+					First[
+						FileNames[
+							"webapps-manifest." ~~ ("m"|"wl"|"json"),
+							"/deployment"
+						],
+						$Failed
+					],
+					"Could not find manifest file in deployment directory"
+				],
+				manifest
+			];
+			ConfirmMatch[
+				Replace[path, {
+					p_String?(StringEndsQ[#, ".json"]&) :>
+						Import[p, "RawJSON"]["webapps"],
+					p_String?(StringEndsQ[#, ".m" | ".wl"]&) :>
+						Import[p, "WL"],
+					Except[_String] :> (
+						Return[
+							Failure["InvalidManifest",
+								<|"Information" ->
+									"Manifest file must be .json, .m, or .wl"
+								|>
+							]
+						]
+					)
+				}],
+				{ ___Association },
+				"Failed to parse WL manifest"
+			]
+		]
+	];
+
+
 (* -------------------------------------------------------------------------- *)
 (* ::Section:: *)(* DeployWebapps *)
 (* Description:  Deploys webapps defined in a WWE webapp manifest file
  * Return:       _Success | _Failure
  *)
 DeployWebapps // Options = {
-	"Manifest" -> "/deployment/webapps-manifest.m",
+	"Manifest" -> Automatic,
 	"LogLabel" -> "[DeployWebapps]: ",
 	"Initialize" -> False,
 	"DeployFrontend" -> True,
@@ -35,7 +81,8 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		Print[
 			WWE`ANSITools["Style", Bold, Green][
 				" - Repo version:   "
-			] <> WWE`ANSITools["Style", Underlined, LightBlue][
+			] <>
+			WWE`ANSITools["Style", Underlined, LightBlue][
 				StringDelete[
 					RunProcess[
 						{"git", "rev-parse", "--abbrev-ref", "HEAD"},
@@ -55,11 +102,11 @@ DeployWebapps[OptionsPattern[]] := Module[{
 		Print[""];
 		Pause[0.01];
 
-		printInfo[ "Importing repositories association..." ];
-		repos = Confirm @ Import[ OptionValue["Manifest"] ];
+		printInfo[ "Importing webapps manifest..." ];
+		repos = Confirm @ importWebappsManifest[ OptionValue["Manifest"] ];
 
 		printInfo[ "Deploying repositories..." ];
-		Confirm[#, #["Information"]]& @ Map[
+		Map[
 			Function[
 				Print[ "\n" <> StringJoin[Table["_", 80]] ];
 				Print[
@@ -75,6 +122,7 @@ DeployWebapps[OptionsPattern[]] := Module[{
 				];
 				Pause[0.01];
 				ResourceFunction["WithMessageHandler"][
+					Confirm @
 					DeployWebappRepository[#,
 						"Initialize" -> init,
 						"DeployFrontend" -> OptionValue["DeployFrontend"],
@@ -547,7 +595,7 @@ handleStash[httpBody_] :=
 				];
 
 				log["Repository: '" <> link <> "'"];
-				repoAssoc = Import["/deployment/webapps-manifest.m", "WL"];
+				repoAssoc = importWebappsManifest[ Automatic ];
 				If[ And[
 						repoAssoc =!= <||>,
 						mergeDest === ("refs/heads/"<>repoAssoc["branch"])
@@ -601,7 +649,7 @@ handleGithub[httpBody_] :=
 				];
 
 				log["Repository: '" <> link <> "'"];
-				repoAssoc = Import["/deployment/webapps-manifest.m", "WL"];
+				repoAssoc = importWebappsManifest[ Automatic ];
 				If[ StringMatchQ[mergeDest, repoAssoc["branch"]],
 					(*pull and deploy the repository*)
 					log["Redeploying webapps"];
