@@ -442,14 +442,48 @@ CloneWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 					repositoryAssoc["remote"]
 				]
 			,
-			"sftp",
-				$Failed (* WIP *)
+			"url:archive",
+				log[
+					"Cloning zip archive from '" <>
+					repositoryAssoc["remote"] <>
+					"' to '" <>
+					repositoryAssoc["local"] <>
+					"'"
+				];
+				archiveClone[
+					repositoryAssoc["remote"],
+					repositoryAssoc["local"]
+				],
+			"file",
+				log[
+					"Files exists at '" <>
+					repositoryAssoc["local"] <>
+					"'"
+				];
+				repositoryAssoc["local"]
 			,
 			_,
 				$Failed
 		]
 	]
 ];
+
+archiveClone[url_String, localDir_String] :=
+	Enclose[
+		(* Create local directory if it doesn't exist *)
+		If[!DirectoryQ[localDir],
+			Confirm[
+				CreateDirectory[localDir, CreateIntermediateDirectories -> True],
+				"Failed to create directory"
+			]
+		];
+		(* Download and unzip the file *)
+		Confirm[
+			ExtractArchive[URL[url], localDir],
+			"Failed to download and extract archive"
+		];
+		localDir
+	];
 
 pacletClone[name_String, remote: (_String | _CloudObject)] :=
 	Enclose[
