@@ -1,4 +1,4 @@
-(* :!CodeAnalysis::BeginBlock:: *)
+1(* :!CodeAnalysis::BeginBlock:: *)
 (* :!CodeAnalysis::Disable::SuspiciousSessionSymbol:: *)
 
 BeginPackage["WWE`FileScope`Deployment`", {
@@ -116,6 +116,8 @@ DeployWebapps[OptionsPattern[]] := Module[{
 							#["name"],
 						StringQ @ #["remote"],
 							#["remote"],
+						StringQ @ #["local"],
+							#["local"],
 						True,
 							"NAME NOT FOUND"
 					]
