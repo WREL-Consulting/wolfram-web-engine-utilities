@@ -133,7 +133,7 @@ DeployWebapps[OptionsPattern[]] := Module[{
 					printMsg[ #["Information"] <> " | " <> #["Tag"] ]&
 				]
 			],
-			repos
+			repos`
 		];
 
 		(* Print closer separator *)
@@ -444,6 +444,19 @@ CloneWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 					repositoryAssoc["remote"]
 				]
 			,
+			"site:archive",
+				log[
+					"Cloning zip archive from '" <>
+					repositoryAssoc["remote"] <>
+					"' to '" <>
+					repositoryAssoc["local"] <>
+					"'"
+				];
+				archiveSiteClone[
+					repositoryAssoc["remote"],
+					repositoryAssoc["local"]
+				]
+			,
 			"url:archive",
 				log[
 					"Cloning zip archive from '" <>
@@ -469,6 +482,35 @@ CloneWebappRepository[repositoryAssoc_, OptionsPattern[]] := Module[{
 		]
 	]
 ];
+
+archiveSiteClone[url_String, localDir_String] :=
+	Module[{ versionMap, versions, files, latest,
+			archiveFormats = {
+				"*.zip", "*.tar", "*.gz", "*.tgz", "*.bz2",
+				"*.tbz2", "*.zst", "*.7z", "*.rar", "*.iso"
+			}
+		},
+		Enclose[
+			files = FileNames[archiveFormats, url, 1];
+			versions = StringExtract[FileNameTake[#], "__" -> 2]& /@ files;
+			latest = Last @ SortBy[
+				versionMap,
+				Function[
+					With[{ v = StringExtract[FileNameTake[#], "__" -> 2] },
+						-Total[
+							ResourceFunction["VersionOrder"][v, #]& /@ versions
+						]
+					]
+				]
+			];
+			ConfirmMatch[
+				ExtractArchive[ url, localDir, OverwriteTarget -> True ],
+				_String,
+				"Failed to extract archive"
+			];
+			localDir
+		]
+	]
 
 archiveClone[url_String, localDir_String] :=
 	Enclose[
