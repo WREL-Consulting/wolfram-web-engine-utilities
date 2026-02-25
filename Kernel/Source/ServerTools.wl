@@ -12,7 +12,14 @@ Begin["`Private`"];
  *)
 RestartKernelPool[] := Enclose[
 	ConfirmAssert[
-		URLExecute["http://localhost:8080/jsp/KillAll.jsp", "RawJSON"]["success"],
+		URLExecute[
+			"http://localhost:8080/jsp/KillAll.jsp",
+			"RawJSON",
+			Authentication -> <|
+				"Username" -> "admin",
+				"Password" -> SystemCredential["admin-pass"]
+			|>
+		]["success"],
 		"Failed to restart the kernel pool"
 	];
 	Success["kernel-pool-restart", <|
@@ -22,7 +29,7 @@ RestartKernelPool[] := Enclose[
 
 (* -------------------------------------------------------------------------- *)
 (* ::Section:: *)(* Logger *)
-(* Description:  Logs meassage into a log file
+(* Description:  Logs message into a log file
  * Return:       _Success
  *)
 Logger // Options = {
