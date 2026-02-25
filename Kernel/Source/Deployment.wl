@@ -133,7 +133,7 @@ DeployWebapps[OptionsPattern[]] := Module[{
 					printMsg[ #["Information"] <> " | " <> #["Tag"] ]&
 				]
 			],
-			repos`
+			repos
 		];
 
 		(* Print closer separator *)
