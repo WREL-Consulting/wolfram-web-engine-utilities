@@ -5,8 +5,8 @@ BeginPackage["WWE`FileScope`BuiltIn`", {
 }];
 Begin["`Private`"];
 
-$stdoutLogFile = FileNameJoin[{"var", "log", "wwe-stdout.log"}];
-$stderrLogFile = FileNameJoin[{"var", "log", "wwe-stderr.log"}];
+$stdoutLogFile = FileNameJoin[{"/", "var", "log", "wwe-stdout.log"}];
+$stderrLogFile = FileNameJoin[{"/", "var", "log", "wwe-stderr.log"}];
 $headerBytes[] :=
 	ToCharacterCode @
 	StringTemplate["`datetime` - [`domain`]: "][<|
