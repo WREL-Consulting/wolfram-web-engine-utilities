@@ -108,11 +108,14 @@ AddWolframInitCode // Attributes = {
 	HoldFirst
 };
 AddWolframInitCode // Options = {
-	"InitFile" -> "/usr/share/Wolfram/Kernel/init.m"
+	"InitFile" -> Automatic
 };
 AddWolframInitCode[initCode_, OptionsPattern[]] := Enclose @ Module[{
 		stream,
-		initFileDir = OptionValue["InitFile"],
+		initFileDir = Replace[
+			OptionValue["InitFile"],
+			Automatic :> FileNameJoin[{$BaseDirectory, "Kernel", "init.m"}]
+		],
 		initFileStr,
 		codeStr =
 			ToString[Hold[initCode], FormatType->InputForm] //
