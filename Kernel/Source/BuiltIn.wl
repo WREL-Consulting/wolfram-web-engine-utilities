@@ -9,17 +9,26 @@ $stdoutLogFile = FileNameJoin[{"/", "var", "log", "wwe-stdout.log"}];
 $stderrLogFile = FileNameJoin[{"/", "var", "log", "wwe-stderr.log"}];
 $headerBytes[] :=
 	ToCharacterCode @
-	StringTemplate["`datetime` - [`domain`]: "][<|
-		"domain" -> If[ $EvaluationEnvironment === "WebAPI",
-			HTTPRequestData["PathString"],
-			$ProcessID
-		],
-		"datetime" -> DateString[{
-			"Year", "-", "Month", "-", "Day",
-			"T",
-			"Hour", ":", "Minute", ":", "Second"
-		}]
-	|>];
+	If[ $EvaluationEnvironment === "WebAPI",
+		StringTemplate["[`datetime`][ `requester |> `method` |> `domain` ]: "][<|
+			"domain" -> HTTPRequestData["PathString"],
+			"method" -> HTTPRequestData["Method"],
+			"requester" -> HTTPRequestData["RemoteAddress"],
+			"datetime" -> DateString[{
+				"Year", "-", "Month", "-", "Day",
+				"T",
+				"Hour", ":", "Minute", ":", "Second"
+			}]
+		|>],
+		StringTemplate["[`datetime`][ `pid` ]: "][<|
+			"pid" -> $ProcessID,
+			"datetime" -> DateString[{
+				"Year", "-", "Month", "-", "Day",
+				"T",
+				"Hour", ":", "Minute", ":", "Second"
+			}]
+		|>]
+	];
 
 DefineOutputStreamMethod[
 	"WithHeader",
