@@ -9,17 +9,26 @@ $stdoutLogFile = FileNameJoin[{"/", "var", "log", "wwe-stdout.log"}];
 $stderrLogFile = FileNameJoin[{"/", "var", "log", "wwe-stderr.log"}];
 $headerBytes[] :=
 	ToCharacterCode @
-	StringTemplate["`datetime` - [`domain`]: "][<|
-		"domain" -> If[ $EvaluationEnvironment === "WebAPI",
-			HTTPRequestData["PathString"],
-			$ProcessID
-		],
-		"datetime" -> DateString[{
-			"Year", "-", "Month", "-", "Day",
-			"T",
-			"Hour", ":", "Minute", ":", "Second"
-		}]
-	|>];
+	If[ $EvaluationEnvironment === "WebAPI",
+		StringTemplate["[`datetime`][ `requester` |> `method` |> `domain` ]: "][<|
+			"domain" -> HTTPRequestData["PathString"],
+			"method" -> HTTPRequestData["Method"],
+			"requester" -> HTTPRequestData["RequesterAddress"],
+			"datetime" -> DateString[{
+				"Year", "-", "Month", "-", "Day",
+				"T",
+				"Hour", ":", "Minute", ":", "Second"
+			}]
+		|>],
+		StringTemplate["[`datetime`][ `pid` ]: "][<|
+			"pid" -> $ProcessID,
+			"datetime" -> DateString[{
+				"Year", "-", "Month", "-", "Day",
+				"T",
+				"Hour", ":", "Minute", ":", "Second"
+			}]
+		|>]
+	];
 
 DefineOutputStreamMethod[
 	"WithHeader",
@@ -68,11 +77,21 @@ If[ Not @ FileExistsQ[#], CreateFile[#]]& /@ {$stdoutLogFile, $stderrLogFile};
 
 (* Open log streams *)
 {$stdoutLogStream, $stderrLogStream} =
-	OpenAppend[#, Method -> "WithHeader"]& /@ {$stdoutLogFile, $stderrLogFile};
+	Function[
+		With[{stream = First[Streams[#], Missing[]]},
+		If[ MissingQ[stream],
+			OpenAppend[#, Method -> "WithHeader"],
+			stream
+		]]
+	] /@ {$stdoutLogFile, $stderrLogFile};
 
 (* Route stdout and messages to log streams *)
-AppendTo[System`$Output,   $stdoutLogStream];
-AppendTo[System`$Messages, $stderrLogStream];
+If[ Length[Select[ System`$Output, #[[1]] === $stdoutLogStream& ]] == 0,
+	AppendTo[System`$Output, $stdoutLogStream]
+];
+If[ Length[Select[ System`$Messages, #[[1]] === $stderrLogStream& ]] == 0,
+	AppendTo[System`$Messages, $stderrLogStream]
+];
 
 End[];
 EndPackage[];
