@@ -13,19 +13,36 @@ $stdoutLogFile = "/proc/1/fd/1";
 $stderrLogFile = "/proc/1/fd/2";
 
 $headerBytes[] :=
-	ToCharacterCode @
-	StringTemplate["`datetime` [ `requester` |> `method` |> `domain` ]: "][<|
-		"domain" -> HTTPRequestData["PathString"],
-		"method" -> HTTPRequestData["Method"],
-		"requester" -> HTTPRequestData["RequesterAddress"],
-		"datetime" -> DateString[{
-			"Year", "-", "Month", "-", "Day",
-			"T",
-			"Hour", ":", "Minute", ":", "Second"
-		}]
-	|>];
+	With[{
+			method = HTTPRequestData["Method"]
+		},
+		{
+			m = ResourceFunction["ANSITools"]["Style",
+				" " <> method <> " ",
+				FontColor -> White,
+				Background -> Switch[method,
+					"GET",   Green,
+					"POST",  Blue,
+					"PUT",   Yellow,
+					"DELETE",Red,
+					_,       Gray
+				]
+			]
+		},
+		ToCharacterCode @
+		StringTemplate["`datetime` OUT   `method` [`domain`]: "][<|
+			"domain" -> HTTPRequestData["PathString"],
+			"method" -> m,
+			"requester" -> HTTPRequestData["RequesterAddress"],
+			"datetime" -> DateString[{
+				"Year", "-", "Month", "-", "Day",
+				" ",
+				"Hour", ":", "Minute", ":", "Second"
+			}]
+		|>]
+	];
 
-DefineOutputStreamMethod["WithHeader", {
+DefineOutputStreamMethod["PipedWithHeader", {
 	"ConstructorFunction" -> Function[{streamname, isAppend, caller, opts},
 		With[{state = Unique["AddHeaderStream"]},
 			state["stream"] = OpenWrite["!cat >> " <> streamname, BinaryFormat -> True];
@@ -71,7 +88,7 @@ If[ Not @ FileExistsQ[#], CreateFile[#]]& /@ {$stdoutLogFile, $stderrLogFile};
 	Function[
 		With[{stream = First[Streams[#], Missing[]]},
 		If[ MissingQ[stream],
-			OpenAppend[#, Method -> "WithHeader"],
+			OpenAppend[#, Method -> "PipedWithHeader"],
 			stream
 		]]
 	] /@ {$stdoutLogFile, $stderrLogFile};
