@@ -27,36 +27,26 @@ $headerBytes[] :=
 DefineOutputStreamMethod["WithHeader", {
 	"ConstructorFunction" -> Function[{streamname, isAppend, caller, opts},
 		With[{state = Unique["AddHeaderStream"]},
-			state["streamname"] = streamname;
+			state["stream"] = OpenWrite["!cat >> " <> streamname, BinaryFormat -> True];
 			state["pos"] = 0;
 			state["newline"] = True;
 			{True, state}
 		]
 	],
-	"CloseFunction" -> Function[state, Remove[state]],
+	"CloseFunction" -> Function[state, Close[state["stream"]]; Remove[state]],
 	"StreamPositionFunction" -> Function[state, {state["pos"], state}],
 	"WriteFunction" -> Function[{state, bytes},
-		If[$EvaluationEnvironment === "WebAPI",
-			Module[{result, stream, nBytes, attempts = 0,
-					write =
-						(* Don't add header to end of line characters *)
-						If[ state["newline"] && !MatchQ[bytes, {Repeated[13 | 10, {1, 2}]}],
-							Join[$headerBytes[], bytes],
-							bytes
-						]
-				},
-				(* Attempt to open later in case file is already open *)
-				While[ Not @ MatchQ[
-						stream =
-							Quiet @
-							OpenAppend[state["streamname"], BinaryFormat -> True],
-						_OutputStream
-					] && attempts < $streamRetryAttempts
-					,
-					attempts++;
-					Pause[$streamRetryIntervalSeconds * attempts]
-				];
-				If[ MatchQ[stream, _OutputStream],
+		(* Capture output to avoid recursion *)
+		Block[{ $Output = {$StandardOutputStream}, $Messages = {$StandardErrorStream} },
+			If[$EvaluationEnvironment === "WebAPI",
+				Module[{result, nBytes,
+						write =
+							(* Don't add header to end of line characters *)
+							If[ state["newline"] && !MatchQ[bytes, {Repeated[13 | 10, {1, 2}]}],
+								Join[$headerBytes[], bytes],
+								bytes
+							]
+					},
 					result = BinaryWrite[state["stream"], write];
 					nBytes = If[result === state["stream"],
 						Length @ write,
@@ -64,11 +54,9 @@ DefineOutputStreamMethod["WithHeader", {
 					];
 					state["pos"] += nBytes;
 					state["newline"] = MatchQ[Last[bytes, {}], 13 | 10];
-					state["stream"] = Close[state["stream"]];
 					{nBytes, state}
-					,
-					{0, state}
-				]
+				],
+				{0, state}
 			]
 		]
 	]
