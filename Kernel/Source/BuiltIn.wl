@@ -9,11 +9,12 @@ Begin["`Private`"];
 $streamRetryAttempts = 5;
 $streamRetryIntervalSeconds = 0.2;
 
-$stdoutLogFile = FileNameJoin[{"/", "var", "log", "wwe-stdout.log"}];
-$stderrLogFile = FileNameJoin[{"/", "var", "log", "wwe-stderr.log"}];
+$stdoutLogFile = "/proc/1/fd/1";
+$stderrLogFile = "/proc/1/fd/2";
+
 $headerBytes[] :=
 	ToCharacterCode @
-	StringTemplate["[`datetime`][ `requester` |> `method` |> `domain` ]: "][<|
+	StringTemplate["`datetime` [ `requester` |> `method` |> `domain` ]: "][<|
 		"domain" -> HTTPRequestData["PathString"],
 		"method" -> HTTPRequestData["Method"],
 		"requester" -> HTTPRequestData["RequesterAddress"],
