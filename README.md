@@ -67,21 +67,6 @@ Exposed under the `WWE` context.
 ---
 ### `DeployWebappFrontEnd` (**Alias:** `deployBuildFolder`)
 #### Usage
-
-| Form | Description |
-|------|-------------|
-| `DeployWebappFrontEnd[buildDir_]`             | Deploys the build files inside `buildDir` to the root of the server `https://address/` |
-| `DeployWebappFrontEnd[buildDir_, loc_String]` | Deploys the build files inside `buildDir` at `https://address/{loc}` |
-
-#### Options
-
-| Option | Pattern | Default | Description |
-|--------|---------|---------|-------------|
-| `"WebappLocation"` | `_String` | `"/usr/local/tomcat/webapps/ROOT"` | The ROOT location of the tomcat webapp directory |
-
----
-### `DeployWebappFrontEnd` (**Alias:** `deployBuildFolder`)
-#### Usage
 | Form | Description |
 |------|-------------|
 | `DeployWebappFrontEnd[buildDir_]`             | Deploys the build files inside `buildDir` to the root of the server `https://address/` |
