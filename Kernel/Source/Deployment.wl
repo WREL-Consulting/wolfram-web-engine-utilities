@@ -387,7 +387,9 @@ DeployWebappBackend[deployScriptLoc_String, OptionsPattern[]] :=
 		Pause[0.01];
 		WWE`Logger["EXEC", "WWE", "DeployWebappBackend", deployScriptLoc];
 		(* Execute using Get to run in same kernel for Message handling *)
-		Confirm @ Get[deployScriptLoc];
+		Block[{$EvaluationEnvironment = "Script"},
+			Confirm @ Get[deployScriptLoc]
+		];
 	];
 
 
