@@ -12,6 +12,29 @@ $stdoutLogFile = "/proc/1/fd/1";
 
 $stderrLogFile = "/proc/1/fd/2";
 
+$headerBytes[] /; $EvaluationEnvironment === "Session" :=
+  ToCharacterCode @
+  StringTemplate["`datetime` OUT   `script` [`pid`]: "][
+    <|
+      "script" -> $CommandLine,
+      "pid" -> $ProcessID,
+      "datetime" -> DateString[
+        {
+          "Year",
+          "-",
+          "Month",
+          "-",
+          "Day",
+          " ",
+          "Hour",
+          ":",
+          "Minute",
+          ":",
+          "Second"
+        }
+      ]
+    |>
+  ];
 $headerBytes[] /; $EvaluationEnvironment === "Script" :=
   ToCharacterCode @
   StringTemplate["`datetime` OUT   `script` [`pid`]: "][
@@ -104,7 +127,7 @@ DefineOutputStreamMethod[
           $Output = {$StandardOutputStream},
           $Messages = {$StandardErrorStream}
         },
-        If[StringMatchQ[$EvaluationEnvironment, "WebAPI" | "Script"],
+        If[StringMatchQ[$EvaluationEnvironment, "WebAPI" | "Script" | "Session"],
           Module[
             {
               result,
