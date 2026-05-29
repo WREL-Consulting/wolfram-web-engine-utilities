@@ -12,7 +12,30 @@ $stdoutLogFile = "/proc/1/fd/1";
 
 $stderrLogFile = "/proc/1/fd/2";
 
-$headerBytes[] :=
+$headerBytes[] /; $EvaluationEnvironment === "Script" :=
+  ToCharacterCode @
+  StringTemplate["`datetime` OUT   `script` [`pid`]: "][
+    <|
+      "script" -> $ScriptCommandLine,
+      "pid" -> $ProcessID,
+      "datetime" -> DateString[
+        {
+          "Year",
+          "-",
+          "Month",
+          "-",
+          "Day",
+          " ",
+          "Hour",
+          ":",
+          "Minute",
+          ":",
+          "Second"
+        }
+      ]
+    |>
+  ];
+$headerBytes[] /; $EvaluationEnvironment === "WebAPI" :=
   With[{method = HTTPRequestData["Method"]},
     {
       m =
@@ -118,11 +141,9 @@ If[Not @ FileExistsQ[#], CreateFile[#]]& /@ {$stdoutLogFile, $stderrLogFile};
   ] /@ {$stdoutLogFile, $stderrLogFile};
 
 (* Route stdout and messages to log streams *)
-If[Length[Select[System`$Output, #[[1]] === $stdoutLogStream&]] == 0,
-  AppendTo[System`$Output, $stdoutLogStream]
-];
-If[Length[Select[System`$Messages, #[[1]] === $stderrLogStream&]] == 0,
-  AppendTo[System`$Messages, $stderrLogStream]
+If[!MemberQ[$Output, $stdoutLogStream], AppendTo[$Output, $stdoutLogStream]];
+If[!MemberQ[$Messages, $stderrLogStream],
+  AppendTo[$Messages, $stderrLogStream]
 ];
 
 End[];
