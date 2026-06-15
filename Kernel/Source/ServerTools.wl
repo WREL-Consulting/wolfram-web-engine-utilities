@@ -11,7 +11,7 @@ Begin["`Private`"];
  * Return:       _Success | _Failure
  *)
 RestartKernelPool[] := Enclose[
-	ConfirmAssert[
+	ConfirmMatch[
 		URLExecute[
 			HTTPRequest[
 				"http://localhost:8080/jsp/KillAll.jsp",
@@ -25,7 +25,9 @@ RestartKernelPool[] := Enclose[
 				|>
 			],
 			Interactive -> False
-		]["success"],
+		],
+		{"success" -> True}
+		,
 		"Failed to restart the kernel pool"
 	];
 	Success["kernel-pool-restart", <|
