@@ -127,7 +127,10 @@ DefineOutputStreamMethod[
           $Output = {$StandardOutputStream},
           $Messages = {$StandardErrorStream}
         },
-        If[StringMatchQ[$EvaluationEnvironment, "WebAPI" | "Script" | "Session"],
+        If[StringMatchQ[
+          $EvaluationEnvironment,
+          "WebAPI" | "Script" | "Session"
+        ],
           Module[
             {
               result,
@@ -151,23 +154,25 @@ DefineOutputStreamMethod[
     ]
   }
 ];
+{$stdoutLogStream, $stderrLogStream} = {None, None};
 
-(* Create log files if they don't exist *)
-If[Not @ FileExistsQ[#], CreateFile[#]]& /@ {$stdoutLogFile, $stderrLogFile};
-
-(* Open log streams *)
-{$stdoutLogStream, $stderrLogStream} =
-  Function[
-    With[{stream = First[Streams[#], Missing[]]},
-      If[MissingQ[stream], OpenAppend[#, Method -> "PipedWithHeader"], stream]
-    ]
-  ] /@ {$stdoutLogFile, $stderrLogFile};
-
-(* Route stdout and messages to log streams *)
-If[!MemberQ[$Output, $stdoutLogStream], AppendTo[$Output, $stdoutLogStream]];
-If[!MemberQ[$Messages, $stderrLogStream],
-  AppendTo[$Messages, $stderrLogStream]
-];
+If[
+  Not @ TrueQ[Environment["DISABLE_KERNEL_LOG"] === "true"],
+  (* Create log files if they don't exist *)
+  If[Not @ FileExistsQ[#], CreateFile[#]]& /@ {$stdoutLogFile, $stderrLogFile};
+  (* Open log streams *)
+  {$stdoutLogStream, $stderrLogStream} =
+    Function[
+      With[{stream = First[Streams[#], Missing[]]},
+        If[MissingQ[stream], OpenAppend[#, Method -> "PipedWithHeader"], stream]
+      ]
+    ] /@ {$stdoutLogFile, $stderrLogFile};
+  (* Route stdout and messages to log streams *)
+  If[!MemberQ[$Output, $stdoutLogStream], AppendTo[$Output, $stdoutLogStream]];
+  If[!MemberQ[$Messages, $stderrLogStream],
+    AppendTo[$Messages, $stderrLogStream]
+  ];
+]
 
 End[];
 EndPackage[];
