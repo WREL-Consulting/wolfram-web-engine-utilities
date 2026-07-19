@@ -157,7 +157,7 @@ DefineOutputStreamMethod[
 {$stdoutLogStream, $stderrLogStream} = {None, None};
 
 If[
-  Not @ TrueQ[Environment["DISABLE_KERNEL_LOG"] === "true"],
+  Not @ TrueQ[Environment["DISABLE_KERNEL_LOG"] === "true"] ,
   (* Create log files if they don't exist *)
   If[Not @ FileExistsQ[#], CreateFile[#]]& /@ {$stdoutLogFile, $stderrLogFile};
   (* Open log streams *)

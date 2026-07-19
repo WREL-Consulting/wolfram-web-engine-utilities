@@ -1,9 +1,6 @@
-(
-	Get["WWE`" <> #]
-)& /@ {
+(Get[StringJoin[ "WWE`", #]])& /@ {
 	"Public`",
 	"Private`",
-
 	"Source`BuiltIn`",
 	"Source`Utilities`",
 	"Source`ServerTools`",
