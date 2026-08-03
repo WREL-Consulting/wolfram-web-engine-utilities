@@ -175,7 +175,7 @@ DeployWebapps[OptionsPattern[]] :=
 			Print[StringJoin[ "\n", Table["_", 80]]];
 			Pause[0.01];
 			printInfo["Restarting kernel pool..."];
-			RestartKernelPool[];
+			Confirm[RestartKernelPool[], "Failed to restart the kernel pool"];
 			printSucc["Deployment successful"];
 			Success[
 				"Deployment successful",
