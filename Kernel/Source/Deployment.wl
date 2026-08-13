@@ -353,7 +353,13 @@ DeployRouteMap[apiMap_Association, base_String, acc_String] :=
 		apiMap
 	];
 DeployRouteMap[expr : Except[_Association], base_String, acc_String] :=
-	DeployExpression[expr, URLBuild[{base, acc}]];
+	With[{
+			route = URLBuild[{base, acc}],
+			log = WWE`Logger["INFO", "WWE", "DeployRouteMap", #]&
+		},
+		log[StringTemplate["Deploying: ``"][route]];
+		DeployExpression[expr, route]
+	];
 
 (* -------------------------------------------------------------------------- *)
 (* ::Section:: *)(* DeployWebappFrontEnd *)
