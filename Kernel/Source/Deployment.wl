@@ -467,6 +467,11 @@ DeployWebappBackend[deployScriptLoc_String, OptionsPattern[]] :=
 		Print["\n - Deploying Backend - \n"];
 		Pause[0.01];
 		WWE`Logger["EXEC", "WWE", "DeployWebappBackend", deployScriptLoc];
+		(* The paclet manager scans /contents (PacletDirectoryLoad in init.m)
+		   when this kernel starts. A repository cloned after that, i.e. on
+		   the first deploy in a new container, is invisible to it, so the
+		   script's Needs fails and its calls stay unevaluated. Rescan first. *)
+		PacletDataRebuild[];
 		(* Execute using Get to run in same kernel for Message handling *)
 		(*Block[{
 				$EvaluationEnvironment = "Script",
